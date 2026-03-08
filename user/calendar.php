@@ -244,10 +244,33 @@ include __DIR__ . '/../layouts/sidebar_user.php';
     border-width: 1.5px;
     font-size: 0.74rem;
     font-weight: 600;
-    padding: 1px 5px;
+    padding: 2px 5px;
     cursor: pointer;
+    overflow: hidden;
 }
-#mainCalendar .fc-event-title { font-weight: 600; }
+#mainCalendar .fc-timegrid-event .fc-event-main {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+#mainCalendar .fc-event-title {
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: block;
+}
+#mainCalendar .fc-event-time {
+    font-size: 0.68rem;
+    opacity: 0.8;
+    overflow: hidden;
+    white-space: nowrap;
+}
+/* Ensure stacked events keep a readable minimum width */
+#mainCalendar .fc-timegrid-event-harness {
+    min-width: 0;
+}
 #mainCalendar .fc-list-event:hover td { background: rgba(68,166,181,0.04); }
 #mainCalendar .fc-list-day-cushion { background: #f9fafb; font-size: 0.8rem; }
 #mainCalendar .fc-list-event-time { font-size: 0.75rem; color: #6b7280; }
@@ -385,6 +408,9 @@ document.addEventListener('DOMContentLoaded', function () {
         allDaySlot: false,
         nowIndicator: true,
         eventTimeFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
+        eventMaxStack:  3,          // cap horizontal stacking; excess shows "+N more"
+        eventMinHeight: 44,         // min px height so short bookings stay readable
+        expandRows:     true,       // fill available vertical space evenly
         events: '<?= BASE_URL ?>/user/calendar.php?api=events',
         eventDidMount: function (info) {
             if (info.event.extendedProps.isOwn) {
