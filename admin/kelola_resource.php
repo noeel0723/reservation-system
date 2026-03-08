@@ -39,8 +39,7 @@ include __DIR__ . '/../layouts/sidebar_admin.php';
 .rs-count-pill { border:1px solid #dbeafe; background:#eff6ff; color:#1d4ed8; font-size:.72rem; padding:4px 10px; border-radius:999px; font-weight:700; }
 .resource-card { border:1px solid #e5e7eb; border-radius:16px; background:#fff; height:100%; transition:.18s; }
 .resource-card:hover { transform:translateY(-2px); box-shadow:0 10px 26px rgba(15,23,42,.08); }
-.rs-avatar { width:50px; height:50px; border-radius:14px; overflow:hidden; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; }
-.rs-title { font-size:.95rem; font-weight:700; color:#1f2937; margin-bottom:2px; }
+.rs-title { font-size:.95rem; font-weight:700; color:#1f2937; margin-bottom:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
 .rs-sub { font-size:.74rem; color:#6b7280; }
 .rs-meta { display:inline-flex; align-items:center; gap:4px; padding:4px 9px; background:#f9fafb; border:1px solid #e5e7eb; border-radius:999px; font-size:.71rem; color:#4b5563; }
 .rs-actions .btn { border-radius:10px; font-size:.76rem; font-weight:600; }
@@ -90,21 +89,18 @@ include __DIR__ . '/../layouts/sidebar_admin.php';
                 $typeColors  = ['Studio' => '#14b8a6', 'Alat' => '#f97316'];
                 $typeBgLight = ['Studio' => '#ccfbf1', 'Alat' => '#ffedd5'];
                 foreach ($resources as $res):
-                    $initials = strtoupper(mb_substr($res['nama'], 0, 2));
                     $color    = $typeColors[$res['tipe']]  ?? '#6c757d';
                     $bgLight  = $typeBgLight[$res['tipe']] ?? '#f8f9fa';
                 ?>
                 <div class="col-12 col-sm-6 col-xl-4 col-xxl-3 resource-card-item" data-name="<?= strtolower(htmlspecialchars($res['nama'])) ?>">
                     <div class="resource-card p-3">
-                        <div class="d-flex align-items-start gap-3 mb-3">
-                            <?php if (!empty($res['foto'])): ?>
-                            <div class="rs-avatar" style="background:#e5e7eb">
-                                <img src="<?= BASE_URL ?>/<?= htmlspecialchars($res['foto']) ?>" alt="<?= htmlspecialchars($res['nama']) ?>" style="width:100%;height:100%;object-fit:cover">
-                            </div>
-                            <?php else: ?>
-                            <div class="rs-avatar" style="background:<?= $color ?>;letter-spacing:.4px;font-size:.82rem"><?= $initials ?></div>
-                            <?php endif; ?>
-                            <div class="flex-grow-1 min-w-0">
+                        <?php if (!empty($res['foto'])): ?>
+                        <div class="rounded-3 overflow-hidden mb-3" style="height:110px;background:#f3f4f6">
+                            <img src="<?= BASE_URL ?>/<?= htmlspecialchars($res['foto']) ?>" alt="<?= htmlspecialchars($res['nama']) ?>" style="width:100%;height:100%;object-fit:cover">
+                        </div>
+                        <?php endif; ?>
+                        <div class="mb-3">
+                            <div class="min-w-0">
                                 <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
                                     <div class="rs-title text-truncate"><?= htmlspecialchars($res['nama']) ?></div>
                                     <span class="badge rounded-pill" style="background:<?= $bgLight ?>;color:<?= $color ?>;font-size:.68rem;border:1px solid <?= $color ?>33"><?= $res['tipe'] ?></span>
@@ -143,7 +139,7 @@ include __DIR__ . '/../layouts/sidebar_admin.php';
                             <button type="button" class="btn btn-sm flex-grow-1"
                                     style="background:<?= $res['is_available'] ? '#fffbeb' : '#ecfdf3' ?>;color:<?= $res['is_available'] ? '#b45309' : '#047857' ?>;border:1px solid <?= $res['is_available'] ? '#fde68a' : '#a7f3d0' ?>"
                                     onclick="if(confirm('<?= $res['is_available'] ? 'Set resource ke Maintenance?' : 'Aktifkan kembali resource ini?' ?>')) document.getElementById('toggleAvailForm<?= $res['id'] ?>').submit()">
-                                <i class="bi bi-<?= $res['is_available'] ? 'pause-circle' : 'check-circle' ?> me-1"></i><?= $res['is_available'] ? 'Pause' : 'Activate' ?>
+                                <i class="bi bi-<?= $res['is_available'] ? 'pause-circle' : 'check-circle' ?> me-1"></i><?= $res['is_available'] ? 'Maintenance' : 'Activate' ?>
                             </button>
                             <form method="POST" action="<?= BASE_URL ?>/admin/proses_resource.php" class="d-inline"
                                   onsubmit="return confirm('Yakin ingin menghapus resource ini? Semua data reservasi terkait akan terpengaruh.')">
