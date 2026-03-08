@@ -332,7 +332,7 @@ $entityIcon = fn($t) => match($t) {
             <input type="hidden" name="action" value="clear_old">
         </form>
 
-        <form method="GET" class="filter-grid">
+        <form method="GET" class="filter-grid" id="activityFilterForm">
             <select name="date" class="form-select">
                 <option value="">All Time</option>
                 <option value="today" <?= $filterDate === 'today' ? 'selected' : '' ?>>Today</option>
@@ -342,11 +342,11 @@ $entityIcon = fn($t) => match($t) {
 
             <div class="filter-search position-relative">
                 <i class="bi bi-search position-absolute" style="left:11px;top:9px;color:#9ca3af"></i>
-                <input type="text" name="user" class="form-control ps-4" placeholder="Search user or activity..."
+                <input type="text" name="user" class="form-control ps-4 js-auto-filter" placeholder="Search user or activity..."
                        value="<?= htmlspecialchars($filterUser) ?>">
             </div>
 
-            <select name="entity" class="form-select">
+            <select name="entity" class="form-select js-auto-filter-select">
                 <option value="">All Types</option>
                     <?php foreach ($entityTypes as $et): ?>
                     <option value="<?= htmlspecialchars($et) ?>" <?= $filterEntity === $et ? 'selected' : '' ?>>
@@ -360,8 +360,10 @@ $entityIcon = fn($t) => match($t) {
             </button>
 
             <div class="filter-actions d-flex gap-2">
-                <button type="submit" class="btn btn-primary flex-grow-1"><i class="bi bi-funnel me-1"></i>Apply</button>
-                <a href="<?= BASE_URL ?>/admin/log_aktivitas.php" class="btn btn-outline-secondary"><i class="bi bi-arrow-counterclockwise"></i></a>
+                <div class="btn btn-light border flex-grow-1 text-muted d-flex align-items-center justify-content-center" style="cursor:default">
+                    <i class="bi bi-lightning-charge me-1"></i>Auto Filter
+                </div>
+                <a href="<?= BASE_URL ?>/admin/log_aktivitas.php" class="btn btn-outline-secondary" title="Reset filter"><i class="bi bi-arrow-counterclockwise"></i></a>
                 </div>
         </form>
     </div>
@@ -452,5 +454,33 @@ $entityIcon = fn($t) => match($t) {
     </div>
     <?php endif; ?>
 </div>
+
+<script>
+(function () {
+    var form = document.getElementById('activityFilterForm');
+    if (!form) return;
+
+    var typingTimer = null;
+    var searchInput = form.querySelector('.js-auto-filter');
+    var selectInputs = form.querySelectorAll('.js-auto-filter-select, select[name="date"]');
+
+    function submitFilters() {
+        var pageField = form.querySelector('input[name="p"]');
+        if (pageField) pageField.remove();
+        form.submit();
+    }
+
+    if (searchInput) {
+        searchInput.addEventListener('input', function () {
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(submitFilters, 450);
+        });
+    }
+
+    selectInputs.forEach(function (el) {
+        el.addEventListener('change', submitFilters);
+    });
+})();
+</script>
 
 <?php include __DIR__ . '/../layouts/footer.php'; ?>
