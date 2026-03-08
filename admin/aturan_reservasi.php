@@ -69,151 +69,281 @@ $s = fn(string $key, $default = '') => htmlspecialchars($settings[$key]['value']
 
 include __DIR__ . '/../layouts/header.php';
 include __DIR__ . '/../layouts/sidebar_admin.php';
+
+// Build duration preset list
+$durationPresets  = [2, 4, 6, 8, 12, 0];
+$currentDuration  = (int)($settings['max_duration_hours']['value'] ?? 8);
+$isCustomDuration = !in_array($currentDuration, $durationPresets);
 ?>
 
+<style>
+/* ── Aturan Reservasi – config-wizard style ── */
+.ar-config-card {
+    background: #fff;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 16px;
+    overflow: hidden;
+}
+.ar-section { padding: 1.75rem 2rem; }
+.ar-section + .ar-section { border-top: 1px solid #f1f3f5; }
+.ar-section-title  { font-size: 0.95rem; font-weight: 700; color: #111827; margin-bottom: 0.2rem; }
+.ar-section-desc   { font-size: 0.8rem;  color: #6b7280; margin-bottom: 1.1rem; }
+
+/* Preset chips (Object-style row) */
+.ar-preset-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.ar-preset-chip {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 4px; padding: 10px 18px; border-radius: 10px; cursor: pointer;
+    border: 1.5px solid #e5e7eb; background: #fff;
+    transition: border-color .15s, background .15s, color .15s;
+    min-width: 72px; user-select: none;
+}
+.ar-preset-chip i  { font-size: 1.1rem; color: #9ca3af; transition: color .15s; }
+.ar-preset-chip span { font-size: 0.75rem; font-weight: 600; color: #374151; white-space: nowrap; transition: color .15s; }
+.ar-preset-chip:hover { border-color: #c4b5fd; background: #faf5ff; }
+.ar-preset-chip:hover i, .ar-preset-chip:hover span { color: #7c3aed; }
+.ar-preset-chip.selected { border-color: #7c3aed; background: #7c3aed; }
+.ar-preset-chip.selected i, .ar-preset-chip.selected span { color: #fff; }
+
+/* Time cards */
+.ar-time-card {
+    border: 1.5px solid #e5e7eb; border-radius: 10px; padding: 14px 16px;
+    background: #fff; transition: border-color .15s;
+}
+.ar-time-card:focus-within { border-color: #7c3aed; }
+.ar-time-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+                 letter-spacing: .05em; color: #9ca3af; margin-bottom: 6px; }
+.ar-time-input { width: 100%; border: none; outline: none; font-size: 1rem;
+                 font-weight: 600; color: #111827; background: transparent; }
+
+/* Rule cards (Type-style 3-col) */
+.ar-rule-card {
+    border: 1.5px solid #e5e7eb; border-radius: 12px; padding: 1.1rem 1.1rem 1rem;
+    background: #fff; height: 100%; transition: border-color .15s, box-shadow .15s;
+}
+.ar-rule-card:hover { border-color: #c4b5fd; box-shadow: 0 0 0 3px #f5f3ff; }
+.ar-rule-icon {
+    width: 36px; height: 36px; border-radius: 8px; display: flex;
+    align-items: center; justify-content: center; font-size: 1rem; margin-bottom: .75rem;
+}
+.ar-rule-title { font-size: 0.88rem; font-weight: 700; color: #111827; margin-bottom: .25rem; }
+.ar-rule-desc  { font-size: 0.75rem; color: #6b7280; line-height: 1.45; }
+.ar-rule-input .input-group-text { font-size: 0.8rem; }
+.ar-rule-input .form-control { font-size: 0.88rem; font-weight: 600; text-align: center; }
+
+/* Action bar */
+.ar-action-bar {
+    padding: 1rem 2rem; background: #fafafa;
+    border-top: 1px solid #f1f3f5;
+    display: flex; align-items: center; justify-content: flex-end; gap: .75rem;
+}
+
+@media (max-width: 767px) {
+    .ar-section { padding: 1.25rem 1rem; }
+    .ar-action-bar { padding: 1rem; }
+}
+</style>
+
 <?php if ($flashSuccess): ?>
-<div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-4">
+<div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-3">
     <i class="bi bi-check-circle me-2"></i><?= htmlspecialchars($flashSuccess) ?>
     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
 </div>
 <?php endif; ?>
 <?php if ($flashError): ?>
-<div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-4">
+<div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-3">
     <i class="bi bi-exclamation-circle me-2"></i><?= htmlspecialchars($flashError) ?>
     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
 </div>
 <?php endif; ?>
 
-<!-- Info banner -->
-<div class="alert border-0 mb-4 d-flex align-items-start gap-3"
-     style="background:#eff6ff;border-left:4px solid #3b82f6!important;border-radius:10px">
-    <i class="bi bi-info-circle-fill mt-1" style="color:#3b82f6;font-size:1.1rem;flex-shrink:0"></i>
-    <div>
-        <div class="fw-semibold" style="color:#1d4ed8">Tentang Aturan Reservasi</div>
-        <div class="text-muted small mt-1">
-            Pengaturan ini berlaku untuk semua pengguna Staff saat mengajukan reservasi baru.
-            Nilai <strong>0</strong> berarti tidak dibatasi (kecuali untuk jam pemesanan).
-        </div>
-    </div>
+<!-- Breadcrumb -->
+<div class="d-flex align-items-center gap-2 mb-3" style="font-size:0.8rem;color:#6b7280">
+    <span style="color:#374151;font-weight:600">Pengaturan</span>
+    <i class="bi bi-chevron-right" style="font-size:0.65rem"></i>
+    <span>Aturan Reservasi</span>
 </div>
 
 <form method="POST" action="">
 <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
+<input type="hidden" name="max_duration_hours" id="maxDurationHidden" value="<?= $s('max_duration_hours', '8') ?>">
 
-<div class="row g-4">
+<div class="ar-config-card">
 
-    <!-- Card: Durasi & Jam -->
-    <div class="col-12 col-md-6">
-        <div class="card border-0 shadow-sm h-100" style="border-radius:14px">
-            <div class="card-header bg-white border-bottom d-flex align-items-center gap-2" style="border-radius:14px 14px 0 0">
-                <span class="d-flex align-items-center justify-content-center rounded-2"
-                      style="width:32px;height:32px;background:#eff6ff;color:#3b82f6;font-size:1rem;flex-shrink:0">
-                    <i class="bi bi-clock"></i>
-                </span>
-                <div>
-                    <h6 class="mb-0 fw-semibold">Batas Waktu Reservasi</h6>
-                    <p class="mb-0 text-muted" style="font-size:0.75rem">Durasi dan jam operasional</p>
-                </div>
+    <!-- ── Section 1: Judul ── -->
+    <div class="ar-section pb-3">
+        <h4 class="fw-bold mb-1" style="font-size:1.35rem">Aturan Reservasi</h4>
+        <p class="text-muted mb-0" style="font-size:0.85rem">
+            Konfigurasikan aturan yang berlaku untuk semua pengajuan reservasi pengguna Staff.
+            Nilai <strong>0</strong> berarti tidak dibatasi.
+        </p>
+    </div>
+
+    <!-- ── Section 2: Durasi Sesi ── -->
+    <div class="ar-section">
+        <div class="ar-section-title">Durasi Sesi</div>
+        <div class="ar-section-desc">Pilih maksimal durasi yang diizinkan untuk satu sesi reservasi.</div>
+
+        <div class="ar-preset-row" id="durationPresets">
+            <?php
+            $presetLabels = [2 => '2 Jam', 4 => '4 Jam', 6 => '6 Jam',
+                             8 => '8 Jam', 12 => '12 Jam', 0 => 'Tak Terbatas'];
+            $presetIcons  = [2 => 'bi-clock',   4 => 'bi-clock',   6 => 'bi-clock',
+                             8 => 'bi-clock',   12 => 'bi-clock-history', 0 => 'bi-infinity'];
+            foreach ($durationPresets as $dp):
+                $sel = (!$isCustomDuration && $currentDuration === $dp) ? 'selected' : '';
+            ?>
+            <div class="ar-preset-chip <?= $sel ?>" data-value="<?= $dp ?>">
+                <i class="bi <?= $presetIcons[$dp] ?>"></i>
+                <span><?= $presetLabels[$dp] ?></span>
             </div>
-            <div class="card-body">
-                <!-- max_duration_hours -->
-                <div class="mb-4">
-                    <label class="form-label fw-medium">
-                        Maksimal Durasi per Sesi (Jam)
-                        <span class="badge bg-secondary ms-1" style="font-size:0.65rem">0 = tidak dibatasi</span>
-                    </label>
-                    <div class="input-group">
-                        <input type="number" class="form-control" name="max_duration_hours"
-                               min="0" max="24" value="<?= $s('max_duration_hours', '8') ?>">
-                        <span class="input-group-text">jam</span>
-                    </div>
-                    <div class="form-text"><?= htmlspecialchars($settings['max_duration_hours']['description'] ?? '') ?></div>
-                </div>
-                <!-- booking_start_hour / booking_end_hour -->
-                <div class="row g-3">
-                    <div class="col-6">
-                        <label class="form-label fw-medium">Jam Mulai</label>
-                        <input type="time" class="form-control" name="booking_start_hour"
-                               value="<?= $s('booking_start_hour', '06:00') ?>">
-                    </div>
-                    <div class="col-6">
-                        <label class="form-label fw-medium">Jam Selesai</label>
-                        <input type="time" class="form-control" name="booking_end_hour"
-                               value="<?= $s('booking_end_hour', '22:00') ?>">
-                    </div>
-                </div>
-                <div class="form-text mt-1">Jam operasional pemesanan. Reservasi di luar jam ini akan ditolak.</div>
+            <?php endforeach; ?>
+            <div class="ar-preset-chip <?= $isCustomDuration ? 'selected' : '' ?>" data-value="custom">
+                <i class="bi bi-pencil-square"></i>
+                <span>Custom</span>
+            </div>
+        </div>
+
+        <div id="customDurWrap" class="mt-3 <?= $isCustomDuration ? '' : 'd-none' ?>" style="max-width:220px">
+            <label class="form-label small fw-medium mb-1">Masukkan nilai custom</label>
+            <div class="input-group input-group-sm">
+                <input type="number" class="form-control" id="customDurNum" min="1" max="48"
+                       value="<?= $isCustomDuration ? $currentDuration : '' ?>" placeholder="contoh: 10">
+                <span class="input-group-text">jam</span>
             </div>
         </div>
     </div>
 
-    <!-- Card: Pengajuan & Kuota -->
-    <div class="col-12 col-md-6">
-        <div class="card border-0 shadow-sm h-100" style="border-radius:14px">
-            <div class="card-header bg-white border-bottom d-flex align-items-center gap-2" style="border-radius:14px 14px 0 0">
-                <span class="d-flex align-items-center justify-content-center rounded-2"
-                      style="width:32px;height:32px;background:#f0fdf4;color:#16a34a;font-size:1rem;flex-shrink:0">
-                    <i class="bi bi-calendar-range"></i>
-                </span>
-                <div>
-                    <h6 class="mb-0 fw-semibold">Batas Pengajuan & Kuota</h6>
-                    <p class="mb-0 text-muted" style="font-size:0.75rem">Kapan dan berapa banyak boleh reservasi</p>
+    <!-- ── Section 3: Jam Operasional ── -->
+    <div class="ar-section">
+        <div class="ar-section-title">Jam Operasional</div>
+        <div class="ar-section-desc">Reservasi hanya dapat diajukan dalam rentang jam ini setiap harinya.</div>
+
+        <div class="row g-3" style="max-width:380px">
+            <div class="col-6">
+                <div class="ar-time-card">
+                    <div class="ar-time-label"><i class="bi bi-sunrise me-1"></i>Jam Mulai</div>
+                    <input type="time" class="ar-time-input" name="booking_start_hour"
+                           value="<?= $s('booking_start_hour', '06:00') ?>">
                 </div>
             </div>
-            <div class="card-body">
-                <!-- max_advance_days -->
-                <div class="mb-4">
-                    <label class="form-label fw-medium">
-                        Maks. Reservasi di Muka (Hari)
-                        <span class="badge bg-secondary ms-1" style="font-size:0.65rem">0 = tidak dibatasi</span>
-                    </label>
-                    <div class="input-group">
-                        <input type="number" class="form-control" name="max_advance_days"
-                               min="0" max="365" value="<?= $s('max_advance_days', '30') ?>">
-                        <span class="input-group-text">hari</span>
-                    </div>
-                    <div class="form-text"><?= htmlspecialchars($settings['max_advance_days']['description'] ?? '') ?></div>
-                </div>
-                <!-- min_advance_hours -->
-                <div class="mb-4">
-                    <label class="form-label fw-medium">
-                        Min. Pengajuan Sebelum Mulai (Jam)
-                        <span class="badge bg-secondary ms-1" style="font-size:0.65rem">0 = tidak dibatasi</span>
-                    </label>
-                    <div class="input-group">
-                        <input type="number" class="form-control" name="min_advance_hours"
-                               min="0" max="168" value="<?= $s('min_advance_hours', '1') ?>">
-                        <span class="input-group-text">jam</span>
-                    </div>
-                    <div class="form-text"><?= htmlspecialchars($settings['min_advance_hours']['description'] ?? '') ?></div>
-                </div>
-                <!-- max_active_per_user -->
-                <div class="mb-0">
-                    <label class="form-label fw-medium">
-                        Maks. Reservasi Aktif per User
-                        <span class="badge bg-secondary ms-1" style="font-size:0.65rem">0 = tidak dibatasi</span>
-                    </label>
-                    <div class="input-group">
-                        <input type="number" class="form-control" name="max_active_per_user"
-                               min="0" max="100" value="<?= $s('max_active_per_user', '5') ?>">
-                        <span class="input-group-text">reservasi</span>
-                    </div>
-                    <div class="form-text"><?= htmlspecialchars($settings['max_active_per_user']['description'] ?? '') ?></div>
+            <div class="col-6">
+                <div class="ar-time-card">
+                    <div class="ar-time-label"><i class="bi bi-sunset me-1"></i>Jam Selesai</div>
+                    <input type="time" class="ar-time-input" name="booking_end_hour"
+                           value="<?= $s('booking_end_hour', '22:00') ?>">
                 </div>
             </div>
         </div>
     </div>
 
-</div>
+    <!-- ── Section 4: Batas Pengajuan & Kuota ── -->
+    <div class="ar-section">
+        <div class="ar-section-title">Batas Pengajuan &amp; Kuota</div>
+        <div class="ar-section-desc">Tentukan seberapa jauh ke depan reservasi bisa dibuat dan batasan per pengguna.</div>
 
-<!-- Save -->
-<div class="d-flex justify-content-end mt-4 gap-2">
-    <a href="<?= BASE_URL ?>/admin/dashboard.php" class="btn btn-outline-secondary rounded-pill px-4">Batal</a>
-    <button type="submit" class="btn btn-primary rounded-pill px-4">
-        <i class="bi bi-check-lg me-1"></i>Simpan Aturan
-    </button>
-</div>
+        <div class="row g-3">
+            <!-- max_advance_days -->
+            <div class="col-12 col-sm-6 col-lg-4">
+                <div class="ar-rule-card">
+                    <div class="ar-rule-icon" style="background:#eff6ff;color:#3b82f6">
+                        <i class="bi bi-calendar-range"></i>
+                    </div>
+                    <div class="ar-rule-title">Pengajuan Maks. H-?</div>
+                    <div class="ar-rule-desc">Berapa hari ke depan reservasi bisa diajukan sebelum hari-H.</div>
+                    <div class="ar-rule-input mt-3">
+                        <div class="input-group input-group-sm">
+                            <input type="number" class="form-control" name="max_advance_days"
+                                   min="0" max="365" value="<?= $s('max_advance_days', '30') ?>">
+                            <span class="input-group-text">hari</span>
+                        </div>
+                        <div class="mt-1 text-muted" style="font-size:0.7rem">0 = tidak dibatasi</div>
+                    </div>
+                </div>
+            </div>
 
+            <!-- min_advance_hours -->
+            <div class="col-12 col-sm-6 col-lg-4">
+                <div class="ar-rule-card">
+                    <div class="ar-rule-icon" style="background:#fef3c7;color:#d97706">
+                        <i class="bi bi-alarm"></i>
+                    </div>
+                    <div class="ar-rule-title">Min. Persiapan</div>
+                    <div class="ar-rule-desc">Minimum jam sebelum acara dimulai agar reservasi bisa dikirim.</div>
+                    <div class="ar-rule-input mt-3">
+                        <div class="input-group input-group-sm">
+                            <input type="number" class="form-control" name="min_advance_hours"
+                                   min="0" max="168" value="<?= $s('min_advance_hours', '1') ?>">
+                            <span class="input-group-text">jam</span>
+                        </div>
+                        <div class="mt-1 text-muted" style="font-size:0.7rem">0 = tidak dibatasi</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- max_active_per_user -->
+            <div class="col-12 col-sm-6 col-lg-4">
+                <div class="ar-rule-card">
+                    <div class="ar-rule-icon" style="background:#f0fdf4;color:#16a34a">
+                        <i class="bi bi-person-check"></i>
+                    </div>
+                    <div class="ar-rule-title">Kuota per Pengguna</div>
+                    <div class="ar-rule-desc">Batas reservasi berstatus Pending/Approved per pengguna secara bersamaan.</div>
+                    <div class="ar-rule-input mt-3">
+                        <div class="input-group input-group-sm">
+                            <input type="number" class="form-control" name="max_active_per_user"
+                                   min="0" max="100" value="<?= $s('max_active_per_user', '5') ?>">
+                            <span class="input-group-text">res.</span>
+                        </div>
+                        <div class="mt-1 text-muted" style="font-size:0.7rem">0 = tidak dibatasi</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Action Bar ── -->
+    <div class="ar-action-bar">
+        <a href="<?= BASE_URL ?>/admin/dashboard.php" class="btn btn-outline-secondary rounded-pill px-4">Batal</a>
+        <button type="submit" class="btn btn-primary rounded-pill px-4">
+            <i class="bi bi-check-lg me-1"></i>Simpan Aturan
+        </button>
+    </div>
+
+</div><!-- /.ar-config-card -->
 </form>
+
+<script>
+(function () {
+    var chips      = document.querySelectorAll('#durationPresets .ar-preset-chip');
+    var hidden     = document.getElementById('maxDurationHidden');
+    var customWrap = document.getElementById('customDurWrap');
+    var customNum  = document.getElementById('customDurNum');
+
+    chips.forEach(function (chip) {
+        chip.addEventListener('click', function () {
+            chips.forEach(function (c) { c.classList.remove('selected'); });
+            chip.classList.add('selected');
+            var val = chip.dataset.value;
+            if (val === 'custom') {
+                customWrap.classList.remove('d-none');
+                hidden.value = customNum.value || '';
+            } else {
+                customWrap.classList.add('d-none');
+                hidden.value = val;
+            }
+        });
+    });
+
+    if (customNum) {
+        customNum.addEventListener('input', function () {
+            var activeChip = document.querySelector('#durationPresets .ar-preset-chip.selected');
+            if (activeChip && activeChip.dataset.value === 'custom') {
+                hidden.value = this.value;
+            }
+        });
+    }
+})();
+</script>
 
 <?php include __DIR__ . '/../layouts/footer.php'; ?>
