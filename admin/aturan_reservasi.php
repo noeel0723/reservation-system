@@ -99,11 +99,11 @@ $isCustomDuration = !in_array($currentDuration, $durationPresets);
     min-width: 72px; user-select: none;
 }
 .ar-preset-chip i  { font-size: 1.1rem; color: #9ca3af; transition: color .15s; }
-.ar-preset-chip span { font-size: 0.75rem; font-weight: 600; color: #374151; white-space: nowrap; transition: color .15s; }
+.ar-preset-chip .ar-preset-label { font-size: 0.75rem; font-weight: 600; color: #374151; white-space: nowrap; transition: color .15s; }
 .ar-preset-chip:hover { border-color: #c4b5fd; background: #faf5ff; }
-.ar-preset-chip:hover i, .ar-preset-chip:hover span { color: #7c3aed; }
+.ar-preset-chip:hover i, .ar-preset-chip:hover .ar-preset-label { color: #7c3aed; }
 .ar-preset-chip.selected { border-color: #7c3aed; background: #7c3aed; }
-.ar-preset-chip.selected i, .ar-preset-chip.selected span { color: #fff; }
+.ar-preset-chip.selected i, .ar-preset-chip.selected .ar-preset-label { color: #fff; }
 
 /* Time cards */
 .ar-time-card {
@@ -157,13 +157,6 @@ $isCustomDuration = !in_array($currentDuration, $durationPresets);
 </div>
 <?php endif; ?>
 
-<!-- Breadcrumb -->
-<div class="d-flex align-items-center gap-2 mb-3" style="font-size:0.8rem;color:#6b7280">
-    <span style="color:#374151;font-weight:600">Configuration</span>
-    <i class="bi bi-chevron-right" style="font-size:0.65rem"></i>
-    <span>Reservation Rules</span>
-</div>
-
 <form method="POST" action="">
 <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
 <input type="hidden" name="max_duration_hours" id="maxDurationHidden" value="<?= $s('max_duration_hours', '8') ?>">
@@ -195,12 +188,12 @@ $isCustomDuration = !in_array($currentDuration, $durationPresets);
             ?>
             <div class="ar-preset-chip <?= $sel ?>" data-value="<?= $dp ?>">
                 <i class="bi <?= $presetIcons[$dp] ?>"></i>
-                <span><?= $presetLabels[$dp] ?></span>
+                <div class="ar-preset-label"><?= $presetLabels[$dp] ?></div>
             </div>
             <?php endforeach; ?>
             <div class="ar-preset-chip <?= $isCustomDuration ? 'selected' : '' ?>" data-value="custom">
                 <i class="bi bi-pencil-square"></i>
-                <span>Custom</span>
+                <div class="ar-preset-label">Custom</div>
             </div>
         </div>
 

@@ -43,6 +43,7 @@ body {
 .sidebar {
     width: var(--sidebar-width);
     min-height: 100vh;
+    height: 100dvh;
     position: fixed;
     top: 0;
     left: 0;
@@ -53,16 +54,17 @@ body {
     display: flex;
     flex-direction: column;
     overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .sidebar-content {
     display: flex;
     flex-direction: column;
-    height: 100%;
+    min-height: 100%;
 }
 
 .sidebar .sidebar-brand {
-    padding: 1rem 0.75rem 0.85rem;
+    padding: 0.85rem 0.7rem 0.7rem;
     border-bottom: none;
     text-align: center;
 }
@@ -93,14 +95,14 @@ body {
 }
 
 .sidebar .sidebar-nav {
-    flex: 1;
-    padding: 0.5rem 0.75rem;
+    flex: 0 0 auto;
+    padding: 0.3rem 0.65rem;
 }
 
 .sidebar .nav-link {
     color: #5f6b7a;
-    padding: 0.7rem 1rem;
-    font-size: 0.9rem;
+    padding: 0.58rem 0.88rem;
+    font-size: 0.86rem;
     font-weight: 500;
     border-radius: 10px;
     display: flex;
@@ -132,9 +134,11 @@ body {
 }
 
 .sidebar .sidebar-bottom {
-    padding: 0.5rem 0.75rem 1rem;
+    padding: 0.45rem 0.65rem calc(0.85rem + env(safe-area-inset-bottom));
     border-top: 1px solid #eee;
     margin-top: auto;
+    position: static;
+    background: #ffffff;
 }
 
 .sidebar .sidebar-bottom .nav-link {
@@ -680,6 +684,15 @@ body {
     border-top-color: #e8ecf0 !important;
 }
 
+.footer-exclusive {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-style: italic;
+    font-weight: 700;
+    font-size: 0.98rem;
+    letter-spacing: -0.01em;
+    color: var(--color-midnight-green) !important;
+}
+
 .footer-offset {
     margin-left: var(--sidebar-width);
 }
@@ -1096,6 +1109,96 @@ body {
 .input-group-text {
     border-radius: 10px;
     border-color: #dbe7ef;
+}
+
+/* ---- Waitlist / Queue Modern Board ---- */
+.wl-board {
+    background: #eaf1f7;
+    border: 1px solid #dbe6ef;
+    border-radius: 18px;
+    padding: 1rem;
+}
+
+.wl-surface {
+    border: 1px solid #dbe6ef;
+    border-radius: 14px;
+    background: #ffffff;
+}
+
+.wl-soft-header {
+    background: #f4f8fc;
+    border-bottom: 1px solid #e1eaf2;
+}
+
+.wl-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.44rem 0.92rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    border: 1px solid #c7d7e4;
+    background: #f8fbfe;
+    color: #41596b;
+    text-decoration: none;
+}
+
+.wl-pill.active {
+    background: #1f2a37;
+    border-color: #1f2a37;
+    color: #ffffff;
+}
+
+.wl-view-toggle .btn {
+    font-size: 0.76rem;
+    padding: 0.34rem 0.7rem;
+}
+
+.wl-row-click {
+    cursor: pointer;
+}
+
+.wl-row-click:hover {
+    background: rgba(68, 166, 181, 0.06);
+}
+
+.wl-timeline {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.wl-timeline li {
+    position: relative;
+    padding: 0 0 0.9rem 1.2rem;
+    font-size: 0.82rem;
+    color: #425466;
+}
+
+.wl-timeline li::before {
+    content: '';
+    position: absolute;
+    left: 0.25rem;
+    top: 0.22rem;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--color-moonstone);
+}
+
+.wl-timeline li::after {
+    content: '';
+    position: absolute;
+    left: 0.56rem;
+    top: 0.86rem;
+    width: 1px;
+    height: calc(100% - 0.5rem);
+    background: #d3dee8;
+}
+
+.wl-timeline li:last-child::after {
+    display: none;
 }
 
 .period-tabs .period-btn:hover:not(.active) {

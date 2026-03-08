@@ -22,11 +22,26 @@ if ($action === 'Finished') {
 }
 $catatan = trim($_POST['catatan'] ?? '');
 $adminId = (int)$_SESSION['user_id'];
+$isAjax = strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'xmlhttprequest';
+
+$respond = function (bool $success, string $message, string $redirect) use ($isAjax): void {
+    if ($isAjax) {
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => $success,
+            'message' => $message,
+            'redirect' => $redirect,
+        ]);
+        exit;
+    }
+
+    setFlash($success ? 'success' : 'error', $message);
+    header('Location: ' . $redirect);
+    exit;
+};
 
 if ($reservationId <= 0 || !in_array($action, ['Approved', 'Rejected', 'Selesai', 'Finished'], true)) {
-    setFlash('error', 'Parameter tidak valid.');
-    header('Location: ' . BASE_URL . '/admin/kelola_reservasi.php');
-    exit;
+    $respond(false, 'Parameter tidak valid.', BASE_URL . '/admin/kelola_reservasi.php');
 }
 
 // Fetch reservation before updating (for waitlist check)
@@ -48,13 +63,13 @@ if ($result['success']) {
             $resData['waktu_mulai'], $resData['waktu_selesai']);
     }
 
-    setFlash('success', $result['message']);
+    $responseOk = true;
 } else {
-    setFlash('error', $result['message']);
+    $responseOk = false;
 }
 
 $redirectTo = ($_POST['redirect'] ?? '') === 'dashboard'
     ? BASE_URL . '/admin/dashboard.php'
     : BASE_URL . '/admin/kelola_reservasi.php';
-header('Location: ' . $redirectTo);
-exit;
+
+$respond($responseOk, $result['message'], $redirectTo);

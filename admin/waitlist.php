@@ -1,6 +1,6 @@
 <?php
 /**
- * Admin — Kelola Waitlist / Antrian (Feature 10)
+ * Admin - Kelola Waitlist / Queue
  */
 require_once __DIR__ . '/../config/init.php';
 require_once __DIR__ . '/../functions/log_helper.php';
@@ -10,186 +10,561 @@ requireAdmin();
 
 $pageTitle = 'Waitlist Queue';
 
-// Expire stale entries on every load
 expireOldWaitlist($pdo);
 
-// Handle admin actions (cancel a waitlist entry)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     requireCsrf();
     $wid    = (int)($_POST['waitlist_id'] ?? 0);
     $action = $_POST['action'] ?? '';
 
+    $ok = false;
+    $msg = 'Aksi tidak valid.';
+
     if ($wid > 0 && $action === 'cancel_admin') {
         $pdo->prepare("UPDATE waitlist SET status = 'Cancelled' WHERE id = :id")->execute([':id' => $wid]);
         logActivity($pdo, 'cancel', 'waitlist', $wid, "Admin membatalkan antrian #$wid.");
-        setFlash('success', 'Entri antrian berhasil dibatalkan.');
+        $ok = true;
+        $msg = 'Entri antrian berhasil dibatalkan.';
     }
 
+    $isAjax = strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'xmlhttprequest';
+    if ($isAjax) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => $ok, 'message' => $msg]);
+        exit;
+    }
+
+    setFlash($ok ? 'success' : 'error', $msg);
     header('Location: ' . BASE_URL . '/admin/waitlist.php');
     exit;
 }
 
-// Filters
-$filterStatus = in_array($_GET['status'] ?? '', ['Waiting','Notified','Converted','Expired','Cancelled'])
-              ? $_GET['status'] : '';
+$filterStatus = in_array($_GET['status'] ?? '', ['Waiting', 'Notified', 'Converted', 'Expired', 'Cancelled'], true)
+    ? $_GET['status'] : '';
 
 $allEntries = getWaitlistEntries($pdo, null, $filterStatus);
+$statusCounts = $pdo->query("SELECT status, COUNT(*) AS cnt FROM waitlist GROUP BY status")->fetchAll(PDO::FETCH_KEY_PAIR);
 
-// Summary counts
-$statusCounts = $pdo->query(
-    "SELECT status, COUNT(*) AS cnt FROM waitlist GROUP BY status"
-)->fetchAll(PDO::FETCH_KEY_PAIR);
+$timelineByEntry = [];
+$timelineStmt = $pdo->prepare(
+    "SELECT action, description, user_nama, created_at
+     FROM activity_logs
+     WHERE (entity_type = 'waitlist' AND entity_id = :wid)
+        OR (entity_type = 'reservation' AND description LIKE :hint)
+     ORDER BY created_at ASC
+     LIMIT 25"
+);
+
+foreach ($allEntries as $entry) {
+    $wid = (int)$entry['id'];
+    $timelineStmt->execute([
+        ':wid' => $wid,
+        ':hint' => '%antrian #' . $wid . '%',
+    ]);
+    $events = $timelineStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+    if (empty($events)) {
+        $events[] = [
+            'action' => 'create',
+            'description' => 'Entri antrian dibuat.',
+            'user_nama' => $entry['user_nama'] ?? '-',
+            'created_at' => $entry['created_at'] ?? date('Y-m-d H:i:s'),
+        ];
+    }
+
+    $timelineByEntry[$wid] = $events;
+}
 
 $flashSuccess = getFlash('success');
-$flashError   = getFlash('error');
+$flashError = getFlash('error');
 
 include __DIR__ . '/../layouts/header.php';
 include __DIR__ . '/../layouts/sidebar_admin.php';
 
-$wBadge = function(string $s): string {
+$wBadge = static function (string $s): string {
     $map = [
-        'Waiting'   => 'rb-pending',
-        'Notified'  => 'rb-approved',
+        'Waiting' => 'rb-pending',
+        'Notified' => 'rb-approved',
         'Converted' => 'rb-finished',
-        'Expired'   => 'rb-cancelled',
+        'Expired' => 'rb-cancelled',
         'Cancelled' => 'rb-cancelled',
     ];
     $icon = [
-        'Waiting'   => 'bi-hourglass-split',
-        'Notified'  => 'bi-bell-fill',
+        'Waiting' => 'bi-hourglass-split',
+        'Notified' => 'bi-bell-fill',
         'Converted' => 'bi-check2-all',
-        'Expired'   => 'bi-clock-history',
+        'Expired' => 'bi-clock-history',
         'Cancelled' => 'bi-slash-circle',
     ];
-    $cls  = $map[$s]  ?? 'rb-cancelled';
-    $icon = $icon[$s] ?? 'bi-circle';
-    return "<span class=\"res-badge {$cls}\"><i class=\"bi {$icon} res-badge-icon\"></i>{$s}</span>";
+    $cls = $map[$s] ?? 'rb-cancelled';
+    $ic = $icon[$s] ?? 'bi-circle';
+    return "<span class=\"res-badge {$cls}\"><i class=\"bi {$ic} res-badge-icon\"></i>{$s}</span>";
 };
 ?>
 
+<style>
+.qx-title { font-size: 1.16rem; font-weight: 700; color: #172230; }
+.qx-subtitle { font-size: .79rem; color: #6b7d8d; }
+.qx-shell { border: 1px solid #d7e1ea; border-radius: 14px; background: #ffffff; }
+.qx-toolbar { border: 1px solid #e1e8ef; border-radius: 12px; background: #f8fbfe; padding: .55rem; }
+.qx-tool-input { border: 1px solid #dce6ef; border-radius: 10px; background: #fff; font-size: .82rem; }
+.qx-tool-select { border: 1px solid #dce6ef; border-radius: 10px; font-size: .82rem; }
+.qx-stat-card { border: 1px solid #dce7f0; border-radius: 14px; background: #fff; }
+.qx-stat-label { font-size: .76rem; color: #6b7d8d; }
+.qx-stat-value { font-size: 1.3rem; font-weight: 700; line-height: 1; color: #213344; }
+.qx-card { border: 1px solid #dce7f0; border-radius: 14px; background: #fff; }
+.qx-click-hint { font-size: .72rem; color: #8a9aab; }
+.qx-row-muted { font-size: .76rem; color: #6f8091; }
+.qx-row-actions .btn { border-radius: 8px; }
+.qx-status-pending { background: #fff8e8; color: #915d00; border: 1px solid #f8d17a; }
+.qx-drawer-meta { font-size: .8rem; color: #667a8c; }
+@media (max-width: 767px) {
+    .wl-board { padding: .75rem; border-radius: 14px; }
+}
+</style>
+
 <?php if ($flashSuccess): ?>
-<div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-4">
+<div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-3">
     <?= htmlspecialchars($flashSuccess) ?>
     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
 </div>
 <?php endif; ?>
+<?php if ($flashError): ?>
+<div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-3">
+    <?= htmlspecialchars($flashError) ?>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+<?php endif; ?>
 
-<!-- Summary Cards -->
-<div class="row g-3 mb-4">
-    <?php
-    $summaryItems = [
-        ['Menunggu',     'Waiting',   'bi-hourglass-split', '#fffbeb', '#b45309', '#fcd34d'],
-        ['Dinotifikasi', 'Notified',  'bi-bell-fill',       '#f0fdf4', '#15803d', '#bbf7d0'],
-        ['Dikonversi',   'Converted', 'bi-check2-all',      '#eff6ff', '#1d4ed8', '#bfdbfe'],
-        ['Kedaluwarsa',  'Expired',   'bi-clock-history',   '#f9fafb', '#374151', '#e5e7eb'],
-    ];
-    foreach ($summaryItems as [$label, $key, $icon, $bg, $color, $border]):
-        $cnt = $statusCounts[$key] ?? 0;
-    ?>
-    <div class="col-6 col-md-3">
-        <div class="card border-0 shadow-sm" style="border-radius:12px">
-            <div class="card-body p-3 d-flex align-items-center gap-3">
-                <span class="rounded-2 d-flex align-items-center justify-content-center"
-                      style="width:38px;height:38px;background:<?= $bg ?>;color:<?= $color ?>;border:1.5px solid <?= $border ?>;flex-shrink:0;font-size:1.1rem">
-                    <i class="bi <?= $icon ?>"></i>
-                </span>
-                <div>
-                    <div class="fw-bold" style="font-size:1.3rem;line-height:1"><?= $cnt ?></div>
-                    <div class="text-muted" style="font-size:0.78rem"><?= $label ?></div>
+<div class="wl-board">
+    <div class="qx-shell p-3">
+    <div class="d-flex align-items-start justify-content-between gap-2 flex-wrap mb-3">
+        <div>
+            <div class="qx-title">Waitlist Queue</div>
+            <div class="qx-subtitle">Klik baris untuk melihat detail cepat di panel samping.</div>
+        </div>
+        <div class="btn-group btn-group-sm wl-view-toggle" role="group" aria-label="View mode">
+            <button type="button" class="btn btn-outline-secondary" data-view="table"><i class="bi bi-table me-1"></i>Table</button>
+            <button type="button" class="btn btn-outline-secondary" data-view="cards"><i class="bi bi-grid me-1"></i>Cards</button>
+        </div>
+    </div>
+
+    <div class="qx-toolbar d-flex align-items-center gap-2 flex-wrap mb-3">
+        <div class="input-group input-group-sm" style="max-width:300px">
+            <span class="input-group-text qx-tool-input"><i class="bi bi-search"></i></span>
+            <input type="text" id="queueQuickSearch" class="form-control qx-tool-input" placeholder="Search user, resource, need...">
+        </div>
+        <select id="queueSortSelect" class="form-select form-select-sm qx-tool-select" style="max-width:180px">
+            <option value="newest">Newest</option>
+            <option value="oldest">Oldest</option>
+        </select>
+        <div class="ms-auto text-muted" style="font-size:.75rem"><i class="bi bi-funnel me-1"></i>Quick filter lokal</div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <?php
+        $summary = [
+            ['Waiting', 'Menunggu', 'bi-hourglass-split', '#fff8e8', '#915d00'],
+            ['Notified', 'Dinotifikasi', 'bi-bell-fill', '#ecfdf3', '#15803d'],
+            ['Converted', 'Dikonversi', 'bi-check2-all', '#eff6ff', '#1d4ed8'],
+            ['Expired', 'Kedaluwarsa', 'bi-clock-history', '#f4f5f7', '#4b5563'],
+        ];
+        foreach ($summary as [$key, $label, $icon, $bg, $color]):
+            $count = (int)($statusCounts[$key] ?? 0);
+        ?>
+        <div class="col-6 col-lg-3">
+            <div class="qx-stat-card p-3 h-100">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="d-inline-flex align-items-center justify-content-center rounded-2" style="width:36px;height:36px;background:<?= $bg ?>;color:<?= $color ?>;font-size:1.05rem">
+                        <i class="bi <?= $icon ?>"></i>
+                    </div>
+                    <div>
+                        <div class="qx-stat-value"><?= $count ?></div>
+                        <div class="qx-stat-label"><?= $label ?></div>
+                    </div>
                 </div>
             </div>
         </div>
+        <?php endforeach; ?>
     </div>
-    <?php endforeach; ?>
-</div>
 
-<!-- Filter Pills -->
-<div class="d-flex align-items-center gap-2 flex-wrap mb-3">
-    <?php
-    $pills = ['' => 'Semua', 'Waiting' => 'Menunggu', 'Notified' => 'Dinotifikasi',
-              'Converted' => 'Dikonversi', 'Expired' => 'Kedaluwarsa', 'Cancelled' => 'Dibatalkan'];
-    foreach ($pills as $key => $label):
-    ?>
-    <a href="?status=<?= $key ?>"
-       class="btn btn-sm px-3 <?= $filterStatus === $key ? 'btn-dark text-white' : 'btn-outline-secondary' ?>"
-       style="border-radius:50px;font-size:0.78rem">
-        <?= $label ?>
-        <?php if ($key !== '' && isset($statusCounts[$key])): ?>
-        <span class="badge bg-secondary ms-1 rounded-pill" style="font-size:0.65rem"><?= $statusCounts[$key] ?></span>
-        <?php endif; ?>
-    </a>
-    <?php endforeach; ?>
-</div>
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <?php
+            $pills = [
+                '' => 'Semua',
+                'Waiting' => 'Menunggu',
+                'Notified' => 'Dinotifikasi',
+                'Converted' => 'Dikonversi',
+                'Expired' => 'Kedaluwarsa',
+                'Cancelled' => 'Dibatalkan',
+            ];
+            foreach ($pills as $k => $label):
+            ?>
+            <a href="?status=<?= urlencode($k) ?>" class="wl-pill <?= $filterStatus === $k ? 'active' : '' ?>">
+                <?= $label ?>
+            </a>
+            <?php endforeach; ?>
+        </div>
+        <div class="qx-click-hint"><i class="bi bi-cursor me-1"></i>Quick detail drawer aktif</div>
+    </div>
 
-<!-- Table -->
-<div class="card border-0 shadow-sm" style="border-radius:12px;overflow:hidden">
-    <div class="table-responsive">
-        <table class="table table-hover mb-0" style="font-size:0.825rem">
-            <thead class="table-light">
-                <tr>
-                    <th>#</th>
-                    <th>User</th>
-                    <th>Resource</th>
-                    <th>Jadwal</th>
-                    <th>Keperluan</th>
-                    <th>Status</th>
-                    <th>Didaftar</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
+    <div id="queueTableWrap" class="wl-surface overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0" style="font-size:.83rem">
+                <thead class="wl-soft-header">
+                    <tr>
+                        <th>#</th>
+                        <th>User</th>
+                        <th>Resource</th>
+                        <th>Jadwal</th>
+                        <th>Keperluan</th>
+                        <th>Status</th>
+                        <th>Didaftar</th>
+                        <th class="text-end">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
                 <?php if (empty($allEntries)): ?>
-                <tr>
-                    <td colspan="8" class="text-center text-muted py-5">
-                        <i class="bi bi-inbox d-block mb-2" style="font-size:2rem;opacity:0.3"></i>
-                        Tidak ada entri antrian.
-                    </td>
-                </tr>
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-5">
+                            <i class="bi bi-inbox d-block mb-2" style="font-size:2rem;opacity:.35"></i>
+                            Tidak ada entri antrian.
+                        </td>
+                    </tr>
                 <?php else: ?>
-                <?php foreach ($allEntries as $e): ?>
-                <tr>
-                    <td class="text-muted"><?= $e['id'] ?></td>
-                    <td>
-                        <div class="fw-medium"><?= htmlspecialchars($e['user_nama']) ?></div>
-                        <?php if ($e['jabatan']): ?>
-                        <div class="text-muted" style="font-size:0.73rem"><?= htmlspecialchars($e['jabatan']) ?></div>
-                        <?php endif; ?>
-                    </td>
-                    <td>
-                        <span class="badge rounded-pill" style="font-size:0.68rem;background:<?= $e['resource_tipe'] === 'Studio' ? '#e0f2fe;color:#0369a1' : '#fef9c3;color:#854d0e' ?>">
-                            <?= $e['resource_tipe'] ?>
-                        </span>
-                        <div style="font-size:0.8rem"><?= htmlspecialchars($e['resource_nama']) ?></div>
-                    </td>
-                    <td style="white-space:nowrap;font-size:0.78rem">
-                        <?= date('d/m/Y', strtotime($e['waktu_mulai'])) ?><br>
-                        <?= date('H:i', strtotime($e['waktu_mulai'])) ?>–<?= date('H:i', strtotime($e['waktu_selesai'])) ?>
-                    </td>
-                    <td><?= htmlspecialchars(mb_strimwidth($e['keperluan'], 0, 40, '…')) ?></td>
-                    <td><?= $wBadge($e['status']) ?></td>
-                    <td class="text-muted" style="font-size:0.76rem;white-space:nowrap">
-                        <?= date('d/m/Y H:i', strtotime($e['created_at'])) ?>
-                    </td>
-                    <td>
-                        <?php if (in_array($e['status'], ['Waiting', 'Notified'])): ?>
-                        <form method="POST" class="d-inline"
-                              onsubmit="return confirm('Batalkan antrian ini?')">
-                            <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
-                            <input type="hidden" name="action" value="cancel_admin">
-                            <input type="hidden" name="waitlist_id" value="<?= $e['id'] ?>">
-                            <button type="submit" class="btn btn-sm"
-                                    style="background:#fff0f0;color:#dc3545;border:1px solid #f5c6cb;border-radius:8px">
-                                <i class="bi bi-x-lg"></i>
-                            </button>
-                        </form>
-                        <?php endif; ?>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
+                    <?php foreach ($allEntries as $e): ?>
+                        <?php
+                        $eid = (int)$e['id'];
+                        $resource = htmlspecialchars($e['resource_nama']);
+                        $need = htmlspecialchars($e['keperluan']);
+                        $userName = htmlspecialchars($e['user_nama']);
+                        $userJob = htmlspecialchars((string)($e['jabatan'] ?? '-'));
+                        $scheduleText = date('d M Y H:i', strtotime($e['waktu_mulai'])) . ' - ' . date('H:i', strtotime($e['waktu_selesai']));
+                        ?>
+                        <tr class="wl-row-click" data-open-drawer="1" data-entry-id="<?= $eid ?>" data-entry-user="<?= $userName ?>" data-entry-job="<?= $userJob ?>" data-entry-resource="<?= $resource ?>" data-entry-type="<?= htmlspecialchars($e['resource_tipe']) ?>" data-entry-schedule="<?= htmlspecialchars($scheduleText) ?>" data-entry-need="<?= $need ?>" data-entry-status="<?= htmlspecialchars($e['status']) ?>" data-entry-created="<?= htmlspecialchars(date('d M Y H:i', strtotime($e['created_at']))) ?>" data-search-text="<?= strtolower($userName . ' ' . $resource . ' ' . $need . ' ' . $e['status']) ?>" data-created-ts="<?= strtotime($e['created_at']) ?>">
+                            <td class="text-muted">#<?= $eid ?></td>
+                            <td>
+                                <div class="fw-semibold"><?= $userName ?></div>
+                                <div class="qx-row-muted"><?= $userJob ?></div>
+                            </td>
+                            <td>
+                                <span class="badge rounded-pill" style="font-size:.67rem;background:<?= $e['resource_tipe'] === 'Studio' ? '#e0f2fe;color:#0369a1' : '#fef9c3;color:#854d0e' ?>">
+                                    <?= htmlspecialchars($e['resource_tipe']) ?>
+                                </span>
+                                <div><?= $resource ?></div>
+                            </td>
+                            <td style="white-space:nowrap">
+                                <?= date('d/m/Y', strtotime($e['waktu_mulai'])) ?><br>
+                                <span class="qx-row-muted"><?= date('H:i', strtotime($e['waktu_mulai'])) ?> - <?= date('H:i', strtotime($e['waktu_selesai'])) ?></span>
+                            </td>
+                            <td><?= htmlspecialchars(mb_strimwidth($e['keperluan'], 0, 42, '...')) ?></td>
+                            <td class="js-status-cell" data-entry-id="<?= $eid ?>"><?= $wBadge($e['status']) ?></td>
+                            <td class="qx-row-muted" style="white-space:nowrap"><?= date('d/m/Y H:i', strtotime($e['created_at'])) ?></td>
+                            <td class="text-end qx-row-actions" onclick="event.stopPropagation()">
+                                <?php if (in_array($e['status'], ['Waiting', 'Notified'], true)): ?>
+                                <form method="POST" class="d-inline js-optimistic-form" data-entry-id="<?= $eid ?>" data-success-message="Antrian berhasil dibatalkan.">
+                                    <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
+                                    <input type="hidden" name="action" value="cancel_admin">
+                                    <input type="hidden" name="waitlist_id" value="<?= $eid ?>">
+                                    <button type="submit" class="btn btn-sm" style="background:#fff0f0;color:#dc3545;border:1px solid #f4c8cf">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+                                </form>
+                                <?php else: ?>
+                                <span class="text-muted">-</span>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
                 <?php endif; ?>
-            </tbody>
-        </table>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="queueCardWrap" class="d-none">
+        <div class="row g-3">
+            <?php if (empty($allEntries)): ?>
+                <div class="col-12">
+                    <div class="qx-card p-4 text-center text-muted">
+                        <i class="bi bi-inbox d-block mb-2" style="font-size:2rem;opacity:.35"></i>
+                        Tidak ada entri antrian.
+                    </div>
+                </div>
+            <?php else: ?>
+                <?php foreach ($allEntries as $e): ?>
+                    <?php
+                    $eid = (int)$e['id'];
+                    $resource = htmlspecialchars($e['resource_nama']);
+                    $need = htmlspecialchars($e['keperluan']);
+                    $userName = htmlspecialchars($e['user_nama']);
+                    $userJob = htmlspecialchars((string)($e['jabatan'] ?? '-'));
+                    $scheduleText = date('d M Y H:i', strtotime($e['waktu_mulai'])) . ' - ' . date('H:i', strtotime($e['waktu_selesai']));
+                    ?>
+                    <div class="col-12 col-md-6">
+                        <div class="qx-card p-3 wl-row-click" data-open-drawer="1" data-entry-id="<?= $eid ?>" data-entry-user="<?= $userName ?>" data-entry-job="<?= $userJob ?>" data-entry-resource="<?= $resource ?>" data-entry-type="<?= htmlspecialchars($e['resource_tipe']) ?>" data-entry-schedule="<?= htmlspecialchars($scheduleText) ?>" data-entry-need="<?= $need ?>" data-entry-status="<?= htmlspecialchars($e['status']) ?>" data-entry-created="<?= htmlspecialchars(date('d M Y H:i', strtotime($e['created_at']))) ?>" data-search-text="<?= strtolower($userName . ' ' . $resource . ' ' . $need . ' ' . $e['status']) ?>" data-created-ts="<?= strtotime($e['created_at']) ?>">
+                            <div class="d-flex align-items-start justify-content-between gap-2 mb-2">
+                                <div>
+                                    <div class="fw-semibold">#<?= $eid ?> - <?= $userName ?></div>
+                                    <div class="qx-row-muted"><?= $userJob ?></div>
+                                </div>
+                                <div class="js-status-cell" data-entry-id="<?= $eid ?>"><?= $wBadge($e['status']) ?></div>
+                            </div>
+                            <div class="qx-row-muted mb-1"><i class="bi bi-hdd-stack me-1"></i><?= htmlspecialchars($e['resource_tipe']) ?> - <?= $resource ?></div>
+                            <div class="qx-row-muted mb-1"><i class="bi bi-calendar3 me-1"></i><?= htmlspecialchars($scheduleText) ?></div>
+                            <div class="qx-row-muted mb-3"><i class="bi bi-chat-left-text me-1"></i><?= htmlspecialchars(mb_strimwidth($e['keperluan'], 0, 72, '...')) ?></div>
+                            <div onclick="event.stopPropagation()">
+                                <?php if (in_array($e['status'], ['Waiting', 'Notified'], true)): ?>
+                                <form method="POST" class="js-optimistic-form" data-entry-id="<?= $eid ?>" data-success-message="Antrian berhasil dibatalkan.">
+                                    <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
+                                    <input type="hidden" name="action" value="cancel_admin">
+                                    <input type="hidden" name="waitlist_id" value="<?= $eid ?>">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                                        <i class="bi bi-x-lg me-1"></i>Batalkan Antrian
+                                    </button>
+                                </form>
+                                <?php else: ?>
+                                <div class="text-muted small">Tidak ada aksi tersedia.</div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+    </div>
     </div>
 </div>
+
+<div class="offcanvas offcanvas-end" tabindex="-1" id="queueDetailDrawer" aria-labelledby="queueDetailDrawerLabel" style="width:min(440px,92vw)">
+    <div class="offcanvas-header border-bottom">
+        <h5 class="offcanvas-title" id="queueDetailDrawerLabel">Queue Detail</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body">
+        <div class="mb-3">
+            <div class="qx-row-muted mb-1">User</div>
+            <div class="fw-semibold" id="qdUser">-</div>
+            <div class="qx-row-muted" id="qdJob">-</div>
+        </div>
+        <div class="mb-3">
+            <div class="qx-row-muted mb-1">Resource</div>
+            <div class="fw-semibold" id="qdResource">-</div>
+            <div class="qx-row-muted" id="qdType">-</div>
+        </div>
+        <div class="mb-3">
+            <div class="qx-row-muted mb-1">Jadwal</div>
+            <div class="fw-semibold" id="qdSchedule">-</div>
+        </div>
+        <div class="mb-3">
+            <div class="qx-row-muted mb-1">Keperluan</div>
+            <div id="qdNeed">-</div>
+        </div>
+        <div class="mb-3">
+            <div class="qx-row-muted mb-1">Status</div>
+            <div id="qdStatus">-</div>
+        </div>
+        <div class="mb-4">
+            <div class="qx-row-muted mb-1">Dibuat</div>
+            <div class="qx-drawer-meta" id="qdCreated">-</div>
+        </div>
+        <h6 class="fw-semibold mb-2">Activity Timeline</h6>
+        <ul class="wl-timeline" id="qdTimeline"></ul>
+    </div>
+</div>
+
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index:1080">
+    <div id="waitlistToast" class="toast align-items-center text-bg-dark border-0" role="status" aria-live="polite" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body" id="waitlistToastBody">Memproses aksi...</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    var timelineData = <?= json_encode($timelineByEntry, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+    var drawerEl = document.getElementById('queueDetailDrawer');
+    var drawer = drawerEl ? new bootstrap.Offcanvas(drawerEl) : null;
+    var toastEl = document.getElementById('waitlistToast');
+    var toast = toastEl ? new bootstrap.Toast(toastEl, { delay: 1800 }) : null;
+    var savedMode = localStorage.getItem('admin_queue_view_mode');
+
+    function showToast(message) {
+        if (!toastEl || !toast) return;
+        document.getElementById('waitlistToastBody').textContent = message;
+        toast.show();
+    }
+
+    function statusHtmlProcessing() {
+        return '<span class="res-badge qx-status-pending"><i class="bi bi-arrow-repeat res-badge-icon"></i>Processing</span>';
+    }
+
+    function applyView(mode, persist) {
+        var tableWrap = document.getElementById('queueTableWrap');
+        var cardWrap = document.getElementById('queueCardWrap');
+        if (!tableWrap || !cardWrap) return;
+
+        tableWrap.classList.toggle('d-none', mode !== 'table');
+        cardWrap.classList.toggle('d-none', mode !== 'cards');
+
+        document.querySelectorAll('.wl-view-toggle [data-view]').forEach(function (btn) {
+            btn.classList.toggle('btn-dark', btn.dataset.view === mode);
+            btn.classList.toggle('text-white', btn.dataset.view === mode);
+            btn.classList.toggle('btn-outline-secondary', btn.dataset.view !== mode);
+        });
+
+        if (persist) {
+            localStorage.setItem('admin_queue_view_mode', mode);
+            savedMode = mode;
+        }
+    }
+
+    function applySearchAndSort() {
+        var keyword = (document.getElementById('queueQuickSearch')?.value || '').toLowerCase().trim();
+        var sort = document.getElementById('queueSortSelect')?.value || 'newest';
+
+        var tableRows = Array.from(document.querySelectorAll('#queueTableWrap tbody tr.wl-row-click'));
+        var cardCols = Array.from(document.querySelectorAll('#queueCardWrap .col-12.col-md-6'));
+
+        tableRows.forEach(function (row) {
+            var text = row.dataset.searchText || '';
+            var show = !keyword || text.indexOf(keyword) !== -1;
+            row.classList.toggle('d-none', !show);
+        });
+
+        cardCols.forEach(function (col) {
+            var card = col.querySelector('.wl-row-click');
+            var text = card ? (card.dataset.searchText || '') : '';
+            var show = !keyword || text.indexOf(keyword) !== -1;
+            col.classList.toggle('d-none', !show);
+        });
+
+        var order = sort === 'oldest' ? 1 : -1;
+        tableRows.sort(function (a, b) {
+            return ((Number(a.dataset.createdTs || 0) - Number(b.dataset.createdTs || 0)) * order);
+        }).forEach(function (row) {
+            row.parentNode.appendChild(row);
+        });
+
+        cardCols.sort(function (a, b) {
+            var aCard = a.querySelector('.wl-row-click');
+            var bCard = b.querySelector('.wl-row-click');
+            var diff = Number((aCard && aCard.dataset.createdTs) || 0) - Number((bCard && bCard.dataset.createdTs) || 0);
+            return diff * order;
+        }).forEach(function (col) {
+            col.parentNode.appendChild(col);
+        });
+    }
+
+    function normalizeActionLabel(action) {
+        if (action === 'create') return 'Dibuat';
+        if (action === 'cancel') return 'Dibatalkan';
+        if (action === 'update') return 'Diperbarui';
+        if (action === 'approved') return 'Disetujui';
+        if (action === 'rejected') return 'Ditolak';
+        return action;
+    }
+
+    function renderTimeline(entryId) {
+        var list = document.getElementById('qdTimeline');
+        if (!list) return;
+
+        var events = timelineData[String(entryId)] || [];
+        if (!events.length) {
+            list.innerHTML = '<li>Tidak ada riwayat aktivitas.</li>';
+            return;
+        }
+
+        list.innerHTML = events.map(function (ev) {
+            var title = normalizeActionLabel(String(ev.action || '-'));
+            var time = String(ev.created_at || '').replace('T', ' ');
+            var desc = String(ev.description || '');
+            var actor = ev.user_nama ? ' - ' + ev.user_nama : '';
+            return '<li><div class="fw-semibold">' + title + actor + '</div><div class="small text-muted">' + time + '</div><div>' + desc + '</div></li>';
+        }).join('');
+    }
+
+    document.querySelectorAll('[data-open-drawer="1"]').forEach(function (row) {
+        row.addEventListener('click', function (e) {
+            if (e.target.closest('button, a, form, input')) return;
+            var id = row.dataset.entryId || '';
+            document.getElementById('qdUser').textContent = row.dataset.entryUser || '-';
+            document.getElementById('qdJob').textContent = row.dataset.entryJob || '-';
+            document.getElementById('qdResource').textContent = row.dataset.entryResource || '-';
+            document.getElementById('qdType').textContent = row.dataset.entryType || '-';
+            document.getElementById('qdSchedule').textContent = row.dataset.entrySchedule || '-';
+            document.getElementById('qdNeed').textContent = row.dataset.entryNeed || '-';
+            document.getElementById('qdStatus').innerHTML = document.querySelector('.js-status-cell[data-entry-id="' + id + '"]')?.innerHTML || row.dataset.entryStatus || '-';
+            document.getElementById('qdCreated').textContent = row.dataset.entryCreated || '-';
+            renderTimeline(id);
+            if (drawer) drawer.show();
+        });
+    });
+
+    document.querySelectorAll('.wl-view-toggle [data-view]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            applyView(btn.dataset.view, true);
+        });
+    });
+
+    var searchInput = document.getElementById('queueQuickSearch');
+    var sortSelect = document.getElementById('queueSortSelect');
+    if (searchInput) searchInput.addEventListener('input', applySearchAndSort);
+    if (sortSelect) sortSelect.addEventListener('change', applySearchAndSort);
+
+    var autoMode = window.matchMedia('(max-width: 991.98px)').matches ? 'cards' : 'table';
+    applyView(savedMode || autoMode, false);
+    window.addEventListener('resize', function () {
+        if (!savedMode) {
+            var dynamic = window.matchMedia('(max-width: 991.98px)').matches ? 'cards' : 'table';
+            applyView(dynamic, false);
+        }
+    });
+
+    applySearchAndSort();
+
+    document.querySelectorAll('.js-optimistic-form').forEach(function (form) {
+        form.addEventListener('submit', function (ev) {
+            ev.preventDefault();
+            var id = form.dataset.entryId;
+            var statusNodes = document.querySelectorAll('.js-status-cell[data-entry-id="' + id + '"]');
+            var original = [];
+
+            statusNodes.forEach(function (node, i) {
+                original[i] = node.innerHTML;
+                node.innerHTML = statusHtmlProcessing();
+            });
+
+            var buttons = form.querySelectorAll('button');
+            buttons.forEach(function (b) { b.disabled = true; });
+            showToast('Menyimpan perubahan...');
+
+            fetch(form.getAttribute('action') || window.location.href, {
+                method: 'POST',
+                body: new FormData(form),
+                credentials: 'same-origin',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            }).then(function (res) {
+                return res.json();
+            }).then(function (data) {
+                if (!data || !data.success) {
+                    throw new Error((data && data.message) ? data.message : 'Gagal memproses aksi.');
+                }
+                showToast(data.message || form.dataset.successMessage || 'Aksi berhasil.');
+                setTimeout(function () { window.location.reload(); }, 420);
+            }).catch(function (err) {
+                statusNodes.forEach(function (node, i) {
+                    node.innerHTML = original[i] || node.innerHTML;
+                });
+                buttons.forEach(function (b) { b.disabled = false; });
+                showToast(err.message || 'Terjadi kesalahan, perubahan dibatalkan.');
+            });
+        });
+    });
+})();
+</script>
 
 <?php include __DIR__ . '/../layouts/footer.php'; ?>

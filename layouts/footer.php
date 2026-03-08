@@ -5,7 +5,7 @@
 <!-- Footer -->
 <footer class="footer border-top py-3 text-center footer-offset" style="background: var(--body-bg);">
     <div class="container">
-        <small class="text-muted">
+        <small class="text-muted footer-exclusive">
             &copy; <?= date('Y') ?> <?= SITE_FULL_NAME ?>
         </small>
     </div>

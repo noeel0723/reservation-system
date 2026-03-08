@@ -83,9 +83,6 @@ include __DIR__ . '/../layouts/sidebar_user.php';
     <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
         <h6 class="mb-0 fw-semibold"><i class="bi bi-clock-history me-2"></i>Reservasi Terbaru</h6>
         <div class="d-flex gap-2">
-            <a href="<?= BASE_URL ?>/user/calendar.php" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
-                <i class="bi bi-calendar3 me-1"></i><span class="d-none d-sm-inline">Kalender</span>
-            </a>
             <a href="<?= BASE_URL ?>/user/riwayat.php" class="btn btn-sm btn-outline-primary rounded-pill px-3">Lihat Semua</a>
         </div>
     </div>

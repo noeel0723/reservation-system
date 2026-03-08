@@ -16,6 +16,23 @@ requireCsrf();
 
 $action = $_POST['action'] ?? '';
 $userId = (int)$_SESSION['user_id'];
+$isAjax = strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'xmlhttprequest';
+
+$respond = function (bool $success, string $message, string $redirect) use ($isAjax): void {
+    if ($isAjax) {
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => $success,
+            'message' => $message,
+            'redirect' => $redirect,
+        ]);
+        exit;
+    }
+
+    setFlash($success ? 'success' : 'error', $message);
+    header('Location: ' . $redirect);
+    exit;
+};
 
 switch ($action) {
     case 'create':
@@ -138,28 +155,26 @@ switch ($action) {
 
     case 'cancel_waitlist':
         $wid = (int)($_POST['waitlist_id'] ?? 0);
-        if ($wid <= 0) { setFlash('error', 'ID antrian tidak valid.'); header('Location: ' . BASE_URL . '/user/waitlist.php'); exit; }
+        if ($wid <= 0) { $respond(false, 'ID antrian tidak valid.', BASE_URL . '/user/waitlist.php'); }
         // Security: only allow cancelling own entry
         $own = $pdo->prepare("SELECT id FROM waitlist WHERE id = :id AND user_id = :uid");
         $own->execute([':id' => $wid, ':uid' => $userId]);
-        if (!$own->fetch()) { setFlash('error', 'Antrian tidak ditemukan.'); header('Location: ' . BASE_URL . '/user/waitlist.php'); exit; }
+        if (!$own->fetch()) { $respond(false, 'Antrian tidak ditemukan.', BASE_URL . '/user/waitlist.php'); }
 
         $pdo->prepare("UPDATE waitlist SET status = 'Cancelled' WHERE id = :id")->execute([':id' => $wid]);
         logActivity($pdo, 'cancel', 'waitlist', $wid, "User #$userId membatalkan antrian #$wid.");
-        setFlash('success', 'Antrian berhasil dibatalkan.');
-        header('Location: ' . BASE_URL . '/user/waitlist.php');
-        exit;
+        $respond(true, 'Antrian berhasil dibatalkan.', BASE_URL . '/user/waitlist.php');
 
     case 'convert_waitlist':
         $wid = (int)($_POST['waitlist_id'] ?? 0);
-        if ($wid <= 0) { setFlash('error', 'ID antrian tidak valid.'); header('Location: ' . BASE_URL . '/user/waitlist.php'); exit; }
+        if ($wid <= 0) { $respond(false, 'ID antrian tidak valid.', BASE_URL . '/user/waitlist.php'); }
 
         $entry = $pdo->prepare(
             "SELECT * FROM waitlist WHERE id = :id AND user_id = :uid AND status = 'Notified'"
         );
         $entry->execute([':id' => $wid, ':uid' => $userId]);
         $w = $entry->fetch();
-        if (!$w) { setFlash('error', 'Antrian tidak ditemukan atau belum siap dikonversi.'); header('Location: ' . BASE_URL . '/user/waitlist.php'); exit; }
+        if (!$w) { $respond(false, 'Antrian tidak ditemukan atau belum siap dikonversi.', BASE_URL . '/user/waitlist.php'); }
 
         $data = [
             'user_id'       => $userId,
@@ -174,13 +189,10 @@ switch ($action) {
             $pdo->prepare("UPDATE waitlist SET status = 'Converted' WHERE id = :id")->execute([':id' => $wid]);
             logActivity($pdo, 'create', 'reservation', (int)($result['id'] ?? 0),
                 "User #$userId mengonversi antrian #$wid menjadi reservasi.");
-            setFlash('success', 'Reservasi berhasil dibuat dari antrian!');
-            header('Location: ' . BASE_URL . '/user/riwayat.php');
+            $respond(true, 'Reservasi berhasil dibuat dari antrian!', BASE_URL . '/user/riwayat.php');
         } else {
-            setFlash('error', $result['message']);
-            header('Location: ' . BASE_URL . '/user/waitlist.php');
+            $respond(false, $result['message'], BASE_URL . '/user/waitlist.php');
         }
-        exit;
 
     default:
         setFlash('error', 'Aksi tidak valid.');

@@ -140,7 +140,7 @@ include __DIR__ . '/../layouts/sidebar_admin.php';
                     <tr><td colspan="7" class="text-center py-5 text-muted">No reservations found.</td></tr>
                 <?php else: ?>
                     <?php foreach ($reservations as $i => $r): ?>
-                    <tr>
+                    <tr data-rv-row-id="<?= (int)$r['id'] ?>">
                         <td class="ps-3 text-muted">#<?= str_pad((string)($i + 1 + (($page - 1) * $perPage)), 3, '0', STR_PAD_LEFT) ?></td>
                         <td>
                             <div class="rv-user fw-semibold"><?= htmlspecialchars($r['peminjam']) ?></div>
@@ -176,12 +176,12 @@ include __DIR__ . '/../layouts/sidebar_admin.php';
                                 default             => 'bi-circle',
                             };
                             ?>
-                            <span class="res-badge <?= $_cls ?>"><i class="bi <?= $_ico ?> res-badge-icon"></i><?= $_lbl ?></span>
+                            <span class="res-badge <?= $_cls ?> js-rv-status" data-reservation-id="<?= (int)$r['id'] ?>"><i class="bi <?= $_ico ?> res-badge-icon"></i><?= $_lbl ?></span>
                         </td>
                         <td class="text-center pe-3">
                             <div class="rv-actions">
                                 <?php if ($r['status'] === 'Pending'): ?>
-                                <form method="POST" action="<?= BASE_URL ?>/admin/proses_reservasi.php" class="d-inline">
+                                <form method="POST" action="<?= BASE_URL ?>/admin/proses_reservasi.php" class="d-inline js-rv-optimistic" data-reservation-id="<?= (int)$r['id'] ?>">
                                     <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
                                     <input type="hidden" name="reservation_id" value="<?= $r['id'] ?>">
                                     <input type="hidden" name="action" value="Approved">
@@ -189,7 +189,7 @@ include __DIR__ . '/../layouts/sidebar_admin.php';
                                 </form>
                                 <button type="button" class="btn btn-sm btn-danger" title="Reject" data-bs-toggle="modal" data-bs-target="#rejectModal" data-id="<?= $r['id'] ?>"><i class="bi bi-x-lg"></i></button>
                                 <?php elseif ($r['status'] === 'Approved'): ?>
-                                <form method="POST" action="<?= BASE_URL ?>/admin/proses_reservasi.php" class="d-inline">
+                                <form method="POST" action="<?= BASE_URL ?>/admin/proses_reservasi.php" class="d-inline js-rv-optimistic" data-reservation-id="<?= (int)$r['id'] ?>">
                                     <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
                                     <input type="hidden" name="reservation_id" value="<?= $r['id'] ?>">
                                     <input type="hidden" name="action" value="Finished">
@@ -214,7 +214,7 @@ include __DIR__ . '/../layouts/sidebar_admin.php';
 <div class="modal fade" id="rejectModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form method="POST" action="<?= BASE_URL ?>/admin/proses_reservasi.php">
+            <form method="POST" action="<?= BASE_URL ?>/admin/proses_reservasi.php" class="js-rv-optimistic" data-reservation-id="">
                 <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
                 <input type="hidden" name="reservation_id" id="rejectReservationId">
                 <input type="hidden" name="action" value="Rejected">
@@ -377,15 +377,76 @@ $qPageBase = $qBase . ($perPage !== 6 ? 'per_page=' . $perPage . '&' : '');
 </div>
 <?php endif; ?>
 
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index:1080">
+    <div id="rvActionToast" class="toast align-items-center text-bg-dark border-0" role="status" aria-live="polite" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body" id="rvActionToastBody">Memproses aksi...</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const toastEl = document.getElementById('rvActionToast');
+    const toast = toastEl ? new bootstrap.Toast(toastEl, { delay: 1900 }) : null;
+
+    const showToast = function (msg) {
+        if (!toastEl || !toast) return;
+        document.getElementById('rvActionToastBody').textContent = msg;
+        toast.show();
+    };
+
+    const processingBadge = '<span class="res-badge rb-pending"><i class="bi bi-arrow-repeat res-badge-icon"></i>Processing</span>';
+
     const rejectModal = document.getElementById('rejectModal');
     if (rejectModal) {
         rejectModal.addEventListener('show.bs.modal', function(e) {
             const id = e.relatedTarget.getAttribute('data-id');
             document.getElementById('rejectReservationId').value = id;
+            const rejectForm = rejectModal.querySelector('form.js-rv-optimistic');
+            if (rejectForm) rejectForm.dataset.reservationId = id || '';
         });
     }
+
+    document.querySelectorAll('form.js-rv-optimistic').forEach(function (form) {
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const reservationIdInput = form.querySelector('input[name="reservation_id"]');
+            const reservationId = reservationIdInput ? reservationIdInput.value : (form.dataset.reservationId || '');
+            const statusNode = reservationId
+                ? document.querySelector('.js-rv-status[data-reservation-id="' + reservationId + '"]')
+                : null;
+
+            const oldStatus = statusNode ? statusNode.innerHTML : '';
+            if (statusNode) statusNode.innerHTML = processingBadge;
+
+            const buttons = form.querySelectorAll('button');
+            buttons.forEach(function (b) { b.disabled = true; });
+            showToast('Menyimpan perubahan...');
+
+            fetch(form.getAttribute('action'), {
+                method: 'POST',
+                body: new FormData(form),
+                credentials: 'same-origin',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            }).then(function (res) {
+                return res.json();
+            }).then(function (data) {
+                if (!data || !data.success) {
+                    throw new Error((data && data.message) ? data.message : 'Aksi gagal diproses.');
+                }
+                showToast(data.message || 'Aksi berhasil.');
+                const target = (data && data.redirect) ? data.redirect : window.location.href;
+                setTimeout(function () { window.location.href = target; }, 420);
+            }).catch(function (err) {
+                if (statusNode) statusNode.innerHTML = oldStatus;
+                buttons.forEach(function (b) { b.disabled = false; });
+                showToast(err.message || 'Terjadi kendala, perubahan dibatalkan.');
+            });
+        });
+    });
 });
 </script>
 
