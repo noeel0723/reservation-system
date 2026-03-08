@@ -8,7 +8,7 @@ require_once __DIR__ . '/../functions/reservation_helper.php';
 
 requireAdmin();
 
-$pageTitle = 'Antrian (Waitlist)';
+$pageTitle = 'Waitlist Queue';
 
 // Expire stale entries on every load
 expireOldWaitlist($pdo);

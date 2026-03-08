@@ -7,7 +7,7 @@ require_once __DIR__ . '/../functions/user_helper.php';
 
 requireAdmin();
 
-$pageTitle = 'Kelola User';
+$pageTitle = 'User Management';
 $flashSuccess = getFlash('success');
 $flashError = getFlash('error');
 

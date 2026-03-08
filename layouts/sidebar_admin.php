@@ -25,7 +25,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                 </li>
                 <li class="nav-item">
                     <a class="nav-link <?= $currentPage === 'kelola_reservasi.php' ? 'active' : '' ?>" href="<?= BASE_URL ?>/admin/kelola_reservasi.php">
-                        <i class="bi bi-calendar-check me-2"></i>Kelola Reservasi
+                        <i class="bi bi-calendar-check me-2"></i>Reservations
                         <?php
                         $stmtBadge = $pdo->query("SELECT COUNT(*) as cnt FROM reservations WHERE status = 'Pending'");
                         $pendingCount = $stmtBadge->fetch()['cnt'];
@@ -36,12 +36,12 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                 </li>
                 <li class="nav-item">
                     <a class="nav-link <?= $currentPage === 'kelola_resource.php' ? 'active' : '' ?>" href="<?= BASE_URL ?>/admin/kelola_resource.php">
-                        <i class="bi bi-hdd-stack me-2"></i>Kelola Resource
+                        <i class="bi bi-hdd-stack me-2"></i>Resources
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link <?= $currentPage === 'kelola_user.php' ? 'active' : '' ?>" href="<?= BASE_URL ?>/admin/kelola_user.php">
-                        <i class="bi bi-people me-2"></i>Kelola User
+                        <i class="bi bi-people me-2"></i>Users
                     </a>
                 </li>
             </ul>
@@ -49,16 +49,16 @@ $currentPage = basename($_SERVER['PHP_SELF']);
 
         <!-- Tools Navigation -->
         <div class="sidebar-nav">
-            <div class="px-3 pt-2 pb-1" style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted)">Pengaturan</div>
+            <div class="px-3 pt-2 pb-1" style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted)">Configuration</div>
             <ul class="nav flex-column">
                 <li class="nav-item">
                     <a class="nav-link <?= $currentPage === 'aturan_reservasi.php' ? 'active' : '' ?>" href="<?= BASE_URL ?>/admin/aturan_reservasi.php">
-                        <i class="bi bi-sliders me-2"></i>Aturan Reservasi
+                        <i class="bi bi-sliders me-2"></i>Reservation Rules
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link <?= $currentPage === 'waitlist.php' ? 'active' : '' ?>" href="<?= BASE_URL ?>/admin/waitlist.php">
-                        <i class="bi bi-list-ol me-2"></i>Antrian
+                        <i class="bi bi-list-ol me-2"></i>Queue
                         <?php
                         $wCount = $pdo->query("SELECT COUNT(*) FROM waitlist WHERE status = 'Waiting'")->fetchColumn();
                         if ($wCount > 0): ?>
@@ -68,7 +68,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                 </li>
                 <li class="nav-item">
                     <a class="nav-link <?= $currentPage === 'log_aktivitas.php' ? 'active' : '' ?>" href="<?= BASE_URL ?>/admin/log_aktivitas.php">
-                        <i class="bi bi-journal-text me-2"></i>Log Aktivitas
+                        <i class="bi bi-journal-text me-2"></i>Activity Log
                     </a>
                 </li>
             </ul>
@@ -110,35 +110,35 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             </li>
             <li class="nav-item">
                 <a class="nav-link <?= $currentPage === 'kelola_reservasi.php' ? 'active' : '' ?>" href="<?= BASE_URL ?>/admin/kelola_reservasi.php">
-                    <i class="bi bi-calendar-check me-2"></i>Kelola Reservasi
+                    <i class="bi bi-calendar-check me-2"></i>Reservations
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link <?= $currentPage === 'kelola_resource.php' ? 'active' : '' ?>" href="<?= BASE_URL ?>/admin/kelola_resource.php">
-                    <i class="bi bi-hdd-stack me-2"></i>Kelola Resource
+                    <i class="bi bi-hdd-stack me-2"></i>Resources
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link <?= $currentPage === 'kelola_user.php' ? 'active' : '' ?>" href="<?= BASE_URL ?>/admin/kelola_user.php">
-                    <i class="bi bi-people me-2"></i>Kelola User
+                    <i class="bi bi-people me-2"></i>Users
                 </a>
             </li>
         </ul>
-        <div class="px-3 pt-2 pb-1" style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted)">Pengaturan</div>
+        <div class="px-3 pt-2 pb-1" style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted)">Configuration</div>
         <ul class="nav flex-column px-2">
             <li class="nav-item">
                 <a class="nav-link <?= $currentPage === 'aturan_reservasi.php' ? 'active' : '' ?>" href="<?= BASE_URL ?>/admin/aturan_reservasi.php">
-                    <i class="bi bi-sliders me-2"></i>Aturan Reservasi
+                    <i class="bi bi-sliders me-2"></i>Reservation Rules
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link <?= $currentPage === 'waitlist.php' ? 'active' : '' ?>" href="<?= BASE_URL ?>/admin/waitlist.php">
-                    <i class="bi bi-list-ol me-2"></i>Antrian
+                    <i class="bi bi-list-ol me-2"></i>Queue
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link <?= $currentPage === 'log_aktivitas.php' ? 'active' : '' ?>" href="<?= BASE_URL ?>/admin/log_aktivitas.php">
-                    <i class="bi bi-journal-text me-2"></i>Log Aktivitas
+                    <i class="bi bi-journal-text me-2"></i>Activity Log
                 </a>
             </li>
         </ul>
@@ -146,7 +146,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
         <ul class="nav flex-column px-2">
             <li class="nav-item">
                 <a class="nav-link" href="<?= BASE_URL ?>/admin/profile.php">
-                    <i class="bi bi-gear me-2"></i>Pengaturan
+                    <i class="bi bi-gear me-2"></i>Settings
                 </a>
             </li>
             <li class="nav-item">
@@ -181,7 +181,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                     <li><span class="dropdown-item-text fw-semibold"><?= htmlspecialchars($user['nama_lengkap'] ?? '') ?></span></li>
                     <li><span class="dropdown-item-text text-muted small"><?= htmlspecialchars($user['role'] ?? '') ?></span></li>
                     <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item" href="<?= BASE_URL ?>/admin/profile.php"><i class="bi bi-person me-2"></i>Profil</a></li>
+                    <li><a class="dropdown-item" href="<?= BASE_URL ?>/admin/profile.php"><i class="bi bi-person me-2"></i>Profile</a></li>
                     <li><a class="dropdown-item text-danger" href="<?= BASE_URL ?>/logout.php"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
                 </ul>
             </div>

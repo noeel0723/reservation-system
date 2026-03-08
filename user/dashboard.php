@@ -35,7 +35,7 @@ include __DIR__ . '/../layouts/sidebar_user.php';
                     dan <strong><?= count($myApproved) ?></strong> reservasi aktif hari ini.
                 </p>
                 <a href="<?= BASE_URL ?>/user/reservasi_baru.php" class="btn hero-btn">
-                    <i class="bi bi-plus-lg me-1"></i>Reservasi Baru
+                    <i class="bi bi-plus-lg me-1"></i>New Reservation
                 </a>
             </div>
         </div>

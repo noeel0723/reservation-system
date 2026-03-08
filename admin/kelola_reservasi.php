@@ -12,7 +12,7 @@ requireAdmin();
 // Auto-mark Selesai: reservasi Approved yang waktu_selesai sudah lewat
 autoMarkSelesai($pdo);
 
-$pageTitle = 'Kelola Reservasi';
+$pageTitle = 'Reservation Management';
 $flashSuccess = getFlash('success');
 $flashError = getFlash('error');
 

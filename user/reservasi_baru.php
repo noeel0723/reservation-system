@@ -9,7 +9,7 @@ require_once __DIR__ . '/../functions/resource_helper.php';
 
 requireStaff();
 
-$pageTitle = 'Reservasi Baru';
+$pageTitle = 'New Reservation';
 $flashError = getFlash('error');
 $flashSuccess = getFlash('success');
 
@@ -83,7 +83,7 @@ if ($waitlistCandidate) {
             <button type="button" id="btnCancel" class="btn btn-sm btn-outline-secondary rounded-pill px-3 d-none">
                 <i class="bi bi-arrow-counterclockwise me-1"></i>Ubah Resource
             </button>
-            <span class="text-muted d-none d-sm-inline" style="font-size:0.8rem">Reservasi Baru</span>
+            <span class="text-muted d-none d-sm-inline" style="font-size:0.8rem">New Reservation</span>
         </div>
         <div class="d-flex align-items-center gap-2">
             <button type="button" id="btnPrev" class="btn btn-sm btn-outline-secondary rounded-pill px-3 d-none">

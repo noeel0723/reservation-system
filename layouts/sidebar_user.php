@@ -25,17 +25,17 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                 </li>
                 <li class="nav-item">
                     <a class="nav-link <?= $currentPage === 'reservasi_baru.php' ? 'active' : '' ?>" href="<?= BASE_URL ?>/user/reservasi_baru.php">
-                        <i class="bi bi-plus-circle me-2"></i>Reservasi Baru
+                        <i class="bi bi-plus-circle me-2"></i>New Reservation
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link <?= $currentPage === 'riwayat.php' ? 'active' : '' ?>" href="<?= BASE_URL ?>/user/riwayat.php">
-                        <i class="bi bi-clock-history me-2"></i>Riwayat Reservasi
+                        <i class="bi bi-clock-history me-2"></i>Reservation History
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link <?= $currentPage === 'waitlist.php' ? 'active' : '' ?>" href="<?= BASE_URL ?>/user/waitlist.php">
-                        <i class="bi bi-list-ol me-2"></i>Antrian Saya
+                        <i class="bi bi-list-ol me-2"></i>My Waitlist
                         <?php
                         $myWait = $pdo->prepare("SELECT COUNT(*) FROM waitlist WHERE user_id = :uid AND status = 'Notified'");
                         $myWait->execute([':uid' => $_SESSION['user_id']]);
@@ -84,17 +84,17 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             </li>
             <li class="nav-item">
                 <a class="nav-link <?= $currentPage === 'reservasi_baru.php' ? 'active' : '' ?>" href="<?= BASE_URL ?>/user/reservasi_baru.php">
-                    <i class="bi bi-plus-circle me-2"></i>Reservasi Baru
+                    <i class="bi bi-plus-circle me-2"></i>New Reservation
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link <?= $currentPage === 'riwayat.php' ? 'active' : '' ?>" href="<?= BASE_URL ?>/user/riwayat.php">
-                    <i class="bi bi-clock-history me-2"></i>Riwayat Reservasi
+                    <i class="bi bi-clock-history me-2"></i>Reservation History
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link <?= $currentPage === 'waitlist.php' ? 'active' : '' ?>" href="<?= BASE_URL ?>/user/waitlist.php">
-                    <i class="bi bi-list-ol me-2"></i>Antrian Saya
+                    <i class="bi bi-list-ol me-2"></i>My Waitlist
                 </a>
             </li>
         </ul>
@@ -102,7 +102,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
         <ul class="nav flex-column px-2">
             <li class="nav-item">
                 <a class="nav-link" href="<?= BASE_URL ?>/user/profile.php">
-                    <i class="bi bi-gear me-2"></i>Pengaturan
+                    <i class="bi bi-gear me-2"></i>Settings
                 </a>
             </li>
             <li class="nav-item">
@@ -137,7 +137,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                     <li><span class="dropdown-item-text fw-semibold"><?= htmlspecialchars($user['nama_lengkap'] ?? '') ?></span></li>
                     <li><span class="dropdown-item-text text-muted small"><?= htmlspecialchars($user['role'] ?? '') ?></span></li>
                     <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item" href="<?= BASE_URL ?>/user/profile.php"><i class="bi bi-person me-2"></i>Profil</a></li>
+                    <li><a class="dropdown-item" href="<?= BASE_URL ?>/user/profile.php"><i class="bi bi-person me-2"></i>Profile</a></li>
                     <li><a class="dropdown-item text-danger" href="<?= BASE_URL ?>/logout.php"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
                 </ul>
             </div>

@@ -7,7 +7,7 @@ require_once __DIR__ . '/../functions/log_helper.php';
 
 requireAdmin();
 
-$pageTitle = 'Log Aktivitas';
+$pageTitle = 'Activity Log';
 
 // Handle clear-old POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'clear_old') {
@@ -78,28 +78,52 @@ include __DIR__ . '/../layouts/sidebar_admin.php';
 // Helper: action badge
 function actionBadge(string $action): string {
     $map = [
-        'create'   => ['bg:#dcfce7;color:#15803d;border:#bbf7d0', 'bi-plus-circle'],
-        'update'   => ['bg:#eff6ff;color:#1d4ed8;border:#bfdbfe', 'bi-pencil'],
-        'delete'   => ['bg:#fef2f2;color:#b91c1c;border:#fecaca', 'bi-trash'],
-        'approve'  => ['bg:#f0fdf4;color:#15803d;border:#bbf7d0', 'bi-check-circle'],
-        'reject'   => ['bg:#fef2f2;color:#b91c1c;border:#fecaca', 'bi-x-circle'],
-        'cancel'   => ['bg:#f9fafb;color:#374151;border:#e5e7eb', 'bi-slash-circle'],
-        'selesai'  => ['bg:#eff6ff;color:#1d4ed8;border:#bfdbfe', 'bi-check2-all'],
-        'login'    => ['bg:#faf5ff;color:#7c3aed;border:#e9d5ff', 'bi-box-arrow-in-right'],
-        'logout'   => ['bg:#fff7ed;color:#b45309;border:#fed7aa', 'bi-box-arrow-right'],
+        'create'   => ['background:#ecfdf3;color:#047857;border-color:#a7f3d0', 'bi-plus-circle'],
+        'update'   => ['background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe', 'bi-pencil'],
+        'delete'   => ['background:#fef2f2;color:#b91c1c;border-color:#fecaca', 'bi-trash'],
+        'approve'  => ['background:#ecfdf3;color:#047857;border-color:#a7f3d0', 'bi-check-circle'],
+        'reject'   => ['background:#fef2f2;color:#b91c1c;border-color:#fecaca', 'bi-x-circle'],
+        'cancel'   => ['background:#fff7ed;color:#b45309;border-color:#fed7aa', 'bi-slash-circle'],
+        'selesai'  => ['background:#ecfeff;color:#0e7490;border-color:#a5f3fc', 'bi-check2-all'],
+        'login'    => ['background:#faf5ff;color:#7c3aed;border-color:#e9d5ff', 'bi-box-arrow-in-right'],
+        'logout'   => ['background:#f9fafb;color:#4b5563;border-color:#d1d5db', 'bi-box-arrow-right'],
     ];
     $key   = strtolower($action);
     $found = null;
-    foreach ($map as $k => $v) { if (str_contains($key, $k)) { $found = $v; break; } }
-    if (!$found) $found = ['bg:#f3f4f6;color:#6b7280;border:#e5e7eb', 'bi-activity'];
+    foreach ($map as $k => $v) {
+        if (str_contains($key, $k)) {
+            $found = $v;
+            break;
+        }
+    }
+    if (!$found) {
+        $found = ['background:#f3f4f6;color:#6b7280;border-color:#e5e7eb', 'bi-activity'];
+    }
     [$style, $icon] = $found;
-    $style = str_replace(['bg:','color:','border:'], ['background:', 'color:', 'border-color:'], $style);
-    $parts = explode(';', $style);
-    $css   = implode(';', $parts);
-    return "<span style=\"display:inline-flex;align-items:center;gap:0.28em;font-size:0.7rem;font-weight:700;
-                          text-transform:uppercase;letter-spacing:0.05em;padding:0.25em 0.65em;
-                          border-radius:6px;border:1.5px solid;white-space:nowrap;{$css}\">
-              <i class=\"bi {$icon}\"></i>" . htmlspecialchars($action) . "</span>";
+    return "<span class=\"act-chip\" style=\"{$style}\"><i class=\"bi {$icon}\"></i>" . htmlspecialchars($action) . "</span>";
+}
+
+function statusBadge(string $action): string {
+    $a = strtolower($action);
+    $isFail = str_contains($a, 'reject') || str_contains($a, 'delete') || str_contains($a, 'cancel') || str_contains($a, 'fail');
+    if ($isFail) {
+        return '<span class="status-chip fail"><i class="bi bi-x-circle"></i>Failed</span>';
+    }
+    return '<span class="status-chip ok"><i class="bi bi-check-circle"></i>Success</span>';
+}
+
+function nameInitial(string $name): string {
+    $name = trim($name);
+    if ($name === '') {
+        return 'A';
+    }
+    $parts = preg_split('/\s+/', $name);
+    $first = strtoupper(substr($parts[0] ?? 'A', 0, 1));
+    $second = '';
+    if (count($parts) > 1) {
+        $second = strtoupper(substr($parts[1], 0, 1));
+    }
+    return $first . $second;
 }
 
 $entityIcon = fn($t) => match($t) {
@@ -112,79 +136,246 @@ $entityIcon = fn($t) => match($t) {
 };
 ?>
 
+<style>
+.activity-shell {
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    background: #ffffff;
+    overflow: hidden;
+}
+.activity-top {
+    padding: 14px 16px;
+    border-bottom: 1px solid #f0f2f4;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.activity-metrics {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.metric-pill {
+    border: 1px solid #e5e7eb;
+    background: #f9fafb;
+    color: #374151;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 5px 10px;
+}
+.activity-filters {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f3f4f6;
+    background: #fcfcfd;
+}
+.filter-grid {
+    display: grid;
+    grid-template-columns: 140px 1fr 150px 170px 180px;
+    gap: 8px;
+}
+.filter-grid .form-control,
+.filter-grid .form-select,
+.filter-grid .btn {
+    height: 36px;
+    font-size: 0.8rem;
+}
+.activity-table {
+    margin: 0;
+    font-size: 0.8rem;
+}
+.activity-table thead th {
+    background: #f8fafc;
+    color: #6b7280;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 10px 12px;
+    white-space: nowrap;
+}
+.activity-table tbody td {
+    padding: 11px 12px;
+    vertical-align: middle;
+    border-color: #f3f4f6;
+}
+.entity-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 999px;
+    padding: 4px 9px;
+    color: #374151;
+    font-size: 0.72rem;
+    font-weight: 600;
+}
+.act-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border: 1px solid;
+    border-radius: 999px;
+    padding: 3px 9px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+}
+.status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border-radius: 999px;
+    padding: 3px 9px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+.status-chip.ok {
+    background: #ecfdf3;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+}
+.status-chip.fail {
+    background: #fef2f2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+}
+.user-mini {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.user-dot {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #e0f2fe;
+    color: #0369a1;
+    font-size: 0.62rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+.user-name {
+    max-width: 160px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.date-cell {
+    color: #6b7280;
+    font-size: 0.74rem;
+    white-space: nowrap;
+}
+
+@media (max-width: 991px) {
+    .filter-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+    .filter-grid .filter-search,
+    .filter-grid .filter-actions {
+        grid-column: span 2;
+    }
+}
+@media (max-width: 575px) {
+    .activity-top,
+    .activity-filters {
+        padding: 12px;
+    }
+    .filter-grid {
+        grid-template-columns: 1fr;
+    }
+    .filter-grid .filter-search,
+    .filter-grid .filter-actions {
+        grid-column: span 1;
+    }
+}
+</style>
+
 <?php if ($flashSuccess): ?>
-<div class="alert alert-success alert-dismissible fade show border-0 shadow-sm">
+<div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-3">
     <?= htmlspecialchars($flashSuccess) ?>
     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
 </div>
 <?php endif; ?>
-
-<!-- Top toolbar -->
-<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
-    <div class="d-flex align-items-center gap-2 flex-wrap">
-        <span class="badge bg-secondary rounded-pill"><?= number_format($totalRows) ?> entri</span>
-    </div>
-    <form method="POST" action="" class="d-inline"
-          onsubmit="return confirm('Hapus semua log lebih dari 90 hari? Tindakan ini tidak bisa dibatalkan.')">
-        <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
-        <input type="hidden" name="action" value="clear_old">
-        <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3">
-            <i class="bi bi-trash me-1"></i><span class="d-none d-sm-inline">Hapus Log >90 Hari</span>
-        </button>
-    </form>
+<?php if ($flashError): ?>
+<div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-3">
+    <?= htmlspecialchars($flashError) ?>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
 </div>
+<?php endif; ?>
 
-<!-- Filters -->
-<div class="card border-0 shadow-sm mb-4" style="border-radius:12px">
-    <div class="card-body py-2 px-3">
-        <form method="GET" class="row g-2 align-items-end">
-            <div class="col-12 col-sm-4">
-                <label class="form-label small mb-1 fw-medium">Cari User / Deskripsi</label>
-                <input type="text" name="user" class="form-control form-control-sm"
-                       placeholder="Nama atau kata kunci..." value="<?= htmlspecialchars($filterUser) ?>">
+<div class="activity-shell">
+    <div class="activity-top">
+        <div>
+            <h5 class="mb-0 fw-bold" style="font-size:1.15rem">Activities</h5>
+            <div class="text-muted" style="font-size:0.76rem">Monitor all system changes, approvals, and user events.</div>
+        </div>
+        <div class="activity-metrics">
+            <span class="metric-pill"><i class="bi bi-database me-1"></i><?= number_format($totalRows) ?> entries</span>
+            <span class="metric-pill">Page <?= $page ?> / <?= $totalPages ?></span>
+        </div>
+    </div>
+
+    <div class="activity-filters">
+        <form method="POST" action="" id="clearOldForm"
+              onsubmit="return confirm('Delete all logs older than 90 days? This action cannot be undone.')">
+            <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
+            <input type="hidden" name="action" value="clear_old">
+        </form>
+
+        <form method="GET" class="filter-grid">
+            <select name="date" class="form-select">
+                <option value="">All Time</option>
+                <option value="today" <?= $filterDate === 'today' ? 'selected' : '' ?>>Today</option>
+                <option value="week"  <?= $filterDate === 'week' ? 'selected' : '' ?>>Last 7 Days</option>
+                <option value="month" <?= $filterDate === 'month' ? 'selected' : '' ?>>Last 30 Days</option>
+            </select>
+
+            <div class="filter-search position-relative">
+                <i class="bi bi-search position-absolute" style="left:11px;top:9px;color:#9ca3af"></i>
+                <input type="text" name="user" class="form-control ps-4" placeholder="Search user or activity..."
+                       value="<?= htmlspecialchars($filterUser) ?>">
             </div>
-            <div class="col-6 col-sm-3">
-                <label class="form-label small mb-1 fw-medium">Tipe</label>
-                <select name="entity" class="form-select form-select-sm">
-                    <option value="">Semua</option>
+
+            <select name="entity" class="form-select">
+                <option value="">All Types</option>
                     <?php foreach ($entityTypes as $et): ?>
                     <option value="<?= htmlspecialchars($et) ?>" <?= $filterEntity === $et ? 'selected' : '' ?>>
                         <?= htmlspecialchars(ucfirst($et)) ?>
                     </option>
                     <?php endforeach; ?>
-                </select>
-            </div>
-            <div class="col-6 col-sm-3">
-                <label class="form-label small mb-1 fw-medium">Periode</label>
-                <select name="date" class="form-select form-select-sm">
-                    <option value="">Semua Waktu</option>
-                    <option value="today" <?= $filterDate === 'today' ? 'selected' : '' ?>>Hari Ini</option>
-                    <option value="week"  <?= $filterDate === 'week'  ? 'selected' : '' ?>>7 Hari Terakhir</option>
-                    <option value="month" <?= $filterDate === 'month' ? 'selected' : '' ?>>30 Hari Terakhir</option>
-                </select>
-            </div>
-            <div class="col-12 col-sm-2">
-                <div class="d-flex gap-1">
-                    <button type="submit" class="btn btn-sm btn-primary flex-grow-1">Filter</button>
-                    <a href="<?= BASE_URL ?>/admin/log_aktivitas.php" class="btn btn-sm btn-outline-secondary">×</a>
+            </select>
+
+            <button type="submit" form="clearOldForm" class="btn btn-outline-danger w-100">
+                <i class="bi bi-trash me-1"></i>Clear > 90 Days
+            </button>
+
+            <div class="filter-actions d-flex gap-2">
+                <button type="submit" class="btn btn-primary flex-grow-1"><i class="bi bi-funnel me-1"></i>Apply</button>
+                <a href="<?= BASE_URL ?>/admin/log_aktivitas.php" class="btn btn-outline-secondary"><i class="bi bi-arrow-counterclockwise"></i></a>
                 </div>
-            </div>
         </form>
     </div>
-</div>
 
-<!-- Log Table -->
-<div class="card border-0 shadow-sm" style="border-radius:12px;overflow:hidden">
     <div class="table-responsive">
-        <table class="table table-hover mb-0" style="font-size:0.825rem">
-            <thead class="table-light">
+        <table class="table activity-table table-hover mb-0">
+            <thead>
                 <tr>
-                    <th style="width:140px">Waktu</th>
-                    <th style="width:130px">User</th>
-                    <th style="width:100px">Aksi</th>
-                    <th style="width:90px">Tipe</th>
-                    <th>Deskripsi</th>
-                    <th class="d-none d-md-table-cell" style="width:110px">IP</th>
+                    <th style="width:120px">Type</th>
+                    <th style="width:130px">Action</th>
+                    <th style="width:110px">Status</th>
+                    <th>Activity</th>
+                    <th style="width:210px">User</th>
+                    <th style="width:135px">Date</th>
                 </tr>
             </thead>
             <tbody>
@@ -192,68 +383,74 @@ $entityIcon = fn($t) => match($t) {
                 <tr>
                     <td colspan="6" class="text-center text-muted py-5">
                         <i class="bi bi-journal-x d-block mb-2" style="font-size:2rem;opacity:0.3"></i>
-                        Tidak ada log yang cocok dengan filter.
+                        No activity log matches your current filters.
                     </td>
                 </tr>
                 <?php else: ?>
                 <?php foreach ($logs as $log): ?>
                 <tr>
-                    <td class="text-muted" style="font-size:0.76rem;white-space:nowrap">
-                        <?= date('d/m/Y', strtotime($log['created_at'])) ?><br>
-                        <span style="font-size:0.72rem"><?= date('H:i:s', strtotime($log['created_at'])) ?></span>
-                    </td>
                     <td>
-                        <?php if ($log['user_nama']): ?>
-                        <span class="fw-medium" style="font-size:0.8rem"><?= htmlspecialchars($log['user_nama']) ?></span>
+                        <?php if ($log['entity_type']): ?>
+                        <span class="entity-chip">
+                            <i class="bi <?= $entityIcon($log['entity_type']) ?>"></i>
+                            <?= htmlspecialchars(ucfirst($log['entity_type'])) ?>
+                        </span>
                         <?php else: ?>
-                        <span class="text-muted">—</span>
+                        <span class="text-muted">System</span>
                         <?php endif; ?>
                     </td>
                     <td><?= actionBadge($log['action']) ?></td>
-                    <td>
-                        <?php if ($log['entity_type']): ?>
-                        <span class="d-inline-flex align-items-center gap-1 text-muted" style="font-size:0.76rem">
-                            <i class="bi <?= $entityIcon($log['entity_type']) ?>"></i>
-                            <?= htmlspecialchars(ucfirst($log['entity_type'])) ?>
-                            <?php if ($log['entity_id']): ?>
-                            <span style="opacity:0.6">#<?= $log['entity_id'] ?></span>
-                            <?php endif; ?>
-                        </span>
-                        <?php else: ?>
-                        <span class="text-muted">—</span>
+                    <td><?= statusBadge($log['action']) ?></td>
+                    <td class="text-dark">
+                        <?= htmlspecialchars($log['description']) ?>
+                        <?php if (!empty($log['entity_id'])): ?>
+                        <span class="text-muted" style="font-size:0.72rem">#<?= (int)$log['entity_id'] ?></span>
+                        <?php endif; ?>
+                        <?php if (!empty($log['ip_address'])): ?>
+                        <div class="text-muted" style="font-size:0.68rem">IP: <?= htmlspecialchars($log['ip_address']) ?></div>
                         <?php endif; ?>
                     </td>
-                    <td><?= htmlspecialchars($log['description']) ?></td>
-                    <td class="d-none d-md-table-cell text-muted" style="font-size:0.75rem"><?= htmlspecialchars($log['ip_address'] ?? '—') ?></td>
+                    <td>
+                        <?php $name = $log['user_nama'] ?: 'System'; ?>
+                        <span class="user-mini">
+                            <span class="user-dot"><?= htmlspecialchars(nameInitial($name)) ?></span>
+                            <span class="user-name" title="<?= htmlspecialchars($name) ?>"><?= htmlspecialchars($name) ?></span>
+                        </span>
+                    </td>
+                    <td class="date-cell">
+                        <?= date('M d, Y', strtotime($log['created_at'])) ?><br>
+                        <?= date('H:i', strtotime($log['created_at'])) ?>
+                    </td>
                 </tr>
                 <?php endforeach; ?>
                 <?php endif; ?>
             </tbody>
         </table>
     </div>
-</div>
 
-<!-- Pagination -->
-<?php if ($totalPages > 1): ?>
-<nav class="mt-4 d-flex justify-content-center">
-    <ul class="pagination pagination-sm mb-0">
-        <li class="page-item <?= $page <= 1 ? 'disabled' : '' ?>">
-            <a class="page-link" href="?<?= http_build_query(array_merge($_GET, ['p' => $page - 1])) ?>">
-                <i class="bi bi-chevron-left"></i>
-            </a>
-        </li>
-        <?php for ($i = max(1, $page - 2); $i <= min($totalPages, $page + 2); $i++): ?>
-        <li class="page-item <?= $i === $page ? 'active' : '' ?>">
-            <a class="page-link" href="?<?= http_build_query(array_merge($_GET, ['p' => $i])) ?>"><?= $i ?></a>
-        </li>
-        <?php endfor; ?>
-        <li class="page-item <?= $page >= $totalPages ? 'disabled' : '' ?>">
-            <a class="page-link" href="?<?= http_build_query(array_merge($_GET, ['p' => $page + 1])) ?>">
-                <i class="bi bi-chevron-right"></i>
-            </a>
-        </li>
-    </ul>
-</nav>
-<?php endif; ?>
+    <?php if ($totalPages > 1): ?>
+    <div class="px-3 py-3 border-top" style="background:#fcfcfd">
+        <nav class="d-flex justify-content-center">
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item <?= $page <= 1 ? 'disabled' : '' ?>">
+                    <a class="page-link" href="?<?= http_build_query(array_merge($_GET, ['p' => $page - 1])) ?>">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+                <?php for ($i = max(1, $page - 2); $i <= min($totalPages, $page + 2); $i++): ?>
+                <li class="page-item <?= $i === $page ? 'active' : '' ?>">
+                    <a class="page-link" href="?<?= http_build_query(array_merge($_GET, ['p' => $i])) ?>"><?= $i ?></a>
+                </li>
+                <?php endfor; ?>
+                <li class="page-item <?= $page >= $totalPages ? 'disabled' : '' ?>">
+                    <a class="page-link" href="?<?= http_build_query(array_merge($_GET, ['p' => $page + 1])) ?>">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+    <?php endif; ?>
+</div>
 
 <?php include __DIR__ . '/../layouts/footer.php'; ?>

@@ -19,7 +19,7 @@ if (isset($_GET['ping'])) {
     exit;
 }
 
-$pageTitle = 'Dashboard Admin';
+$pageTitle = 'Admin Dashboard';
 $stats = getDashboardStats($pdo);
 
 // Reservasi terbaru (5 terakhir)

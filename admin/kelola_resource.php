@@ -7,7 +7,7 @@ require_once __DIR__ . '/../functions/resource_helper.php';
 
 requireAdmin();
 
-$pageTitle = 'Kelola Resource';
+$pageTitle = 'Resource Management';
 $flashSuccess = getFlash('success');
 $flashError = getFlash('error');
 

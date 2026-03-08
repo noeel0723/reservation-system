@@ -7,7 +7,7 @@ require_once __DIR__ . '/../functions/reservation_helper.php';
 
 requireStaff();
 
-$pageTitle = 'Riwayat Reservasi';
+$pageTitle = 'Reservation History';
 $flashSuccess = getFlash('success');
 $flashError   = getFlash('error');
 

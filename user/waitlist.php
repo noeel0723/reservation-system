@@ -8,7 +8,7 @@ require_once __DIR__ . '/../functions/reservation_helper.php';
 
 requireStaff();
 
-$pageTitle = 'Antrian Saya';
+$pageTitle = 'My Waitlist';
 $userId    = (int)$_SESSION['user_id'];
 
 // Expire stale entries first
@@ -87,10 +87,10 @@ if (!empty($notifiedEntries)):
         <i class="bi bi-inbox d-block mb-3" style="font-size:3rem;color:var(--color-moonstone);opacity:0.4"></i>
         <h6 class="fw-semibold text-muted">Tidak ada antrian</h6>
         <p class="text-muted small mb-3">
-            Saat jadwal yang Anda inginkan penuh, Anda bisa mendaftar antrian dari halaman Reservasi Baru.
+            Saat jadwal yang Anda inginkan penuh, Anda bisa mendaftar antrian dari halaman New Reservation.
         </p>
         <a href="<?= BASE_URL ?>/user/reservasi_baru.php" class="btn btn-primary rounded-pill px-4">
-            <i class="bi bi-plus-lg me-1"></i>Reservasi Baru
+            <i class="bi bi-plus-lg me-1"></i>New Reservation
         </a>
     </div>
 </div>

@@ -7,7 +7,7 @@ require_once __DIR__ . '/../functions/user_helper.php';
 
 requireStaff();
 
-$pageTitle = 'Profil Saya';
+$pageTitle = 'My Profile';
 $flashSuccess = getFlash('success');
 $flashError = getFlash('error');
 $userId = (int)$_SESSION['user_id'];

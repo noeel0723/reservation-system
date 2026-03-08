@@ -8,7 +8,7 @@ require_once __DIR__ . '/../functions/log_helper.php';
 
 requireAdmin();
 
-$pageTitle = 'Aturan Reservasi';
+$pageTitle = 'Reservation Rules';
 
 // Handle save
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -159,9 +159,9 @@ $isCustomDuration = !in_array($currentDuration, $durationPresets);
 
 <!-- Breadcrumb -->
 <div class="d-flex align-items-center gap-2 mb-3" style="font-size:0.8rem;color:#6b7280">
-    <span style="color:#374151;font-weight:600">Pengaturan</span>
+    <span style="color:#374151;font-weight:600">Configuration</span>
     <i class="bi bi-chevron-right" style="font-size:0.65rem"></i>
-    <span>Aturan Reservasi</span>
+    <span>Reservation Rules</span>
 </div>
 
 <form method="POST" action="">
@@ -172,7 +172,7 @@ $isCustomDuration = !in_array($currentDuration, $durationPresets);
 
     <!-- ── Section 1: Judul ── -->
     <div class="ar-section pb-3">
-        <h4 class="fw-bold mb-1" style="font-size:1.35rem">Aturan Reservasi</h4>
+        <h4 class="fw-bold mb-1" style="font-size:1.35rem">Reservation Rules</h4>
         <p class="text-muted mb-0" style="font-size:0.85rem">
             Konfigurasikan aturan yang berlaku untuk semua pengajuan reservasi pengguna Staff.
             Nilai <strong>0</strong> berarti tidak dibatasi.
