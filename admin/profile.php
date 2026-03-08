@@ -78,7 +78,6 @@ include __DIR__ . '/../layouts/sidebar_admin.php';
 <style>
 .st-shell { border:1px solid #e5e7eb; border-radius:20px; background:#fff; overflow:hidden; }
 .st-top { padding:14px 16px; border-bottom:1px solid #eef2f7; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
-.st-search { padding:10px 16px; border-bottom:1px solid #eef2f7; background:#fcfcfd; }
 .st-tabs { display:flex; gap:10px; padding:0 16px; border-bottom:1px solid #eef2f7; overflow:auto; }
 .st-tab-btn { background:none; border:none; border-bottom:2px solid transparent; padding:.85rem .3rem; color:#6b7280; font-size:.82rem; font-weight:600; white-space:nowrap; }
 .st-tab-btn.active { color:#111827; border-bottom-color:#111827; }
@@ -87,7 +86,7 @@ include __DIR__ . '/../layouts/sidebar_admin.php';
 .st-avatar { width:92px; height:92px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-size:1.8rem; font-weight:800; background:linear-gradient(135deg,#6477d8,#4f46e5); margin:auto; }
 .st-mini { font-size:.73rem; color:#6b7280; }
 @media (max-width: 767px) {
-    .st-top, .st-search, .st-main { padding:12px; }
+    .st-top, .st-main { padding:12px; }
     .st-tabs { padding:0 12px; }
 }
 </style>
@@ -98,20 +97,12 @@ include __DIR__ . '/../layouts/sidebar_admin.php';
             <h5 class="mb-0 fw-bold">Settings</h5>
             <div class="text-muted" style="font-size:.76rem">Manage your account information and preferences.</div>
         </div>
-        <button type="button" class="btn btn-sm" style="background:#ec4899;color:#fff;border-radius:999px;padding:.45rem 1rem" onclick="document.getElementById('profileFormSubmit').click()">Save all changes</button>
-    </div>
-
-    <div class="st-search">
-        <div class="input-group input-group-sm">
-            <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-            <input type="text" class="form-control" placeholder="Search settings..." readonly>
-        </div>
+        <button type="button" class="btn btn-sm" style="background:var(--color-moonstone);color:#fff;border-radius:999px;padding:.45rem 1rem" onclick="document.getElementById('profileFormSubmit').click()">Save all changes</button>
     </div>
 
     <div class="st-tabs" role="tablist">
         <button class="st-tab-btn <?= $activeTab === 'edit' ? 'active' : '' ?>" data-bs-toggle="tab" data-bs-target="#pane-edit" type="button" role="tab">Profile</button>
-        <button class="st-tab-btn <?= $activeTab === 'pass' ? 'active' : '' ?>" data-bs-toggle="tab" data-bs-target="#pane-pass" type="button" role="tab">Security</button>
-        <button class="st-tab-btn" type="button" disabled>Notifications</button>
+        <button class="st-tab-btn <?= $activeTab === 'pass' ? 'active' : '' ?>" data-bs-toggle="tab" data-bs-target="#pane-pass" type="button" role="tab">Change Password</button>
     </div>
 
     <div class="tab-content st-main">
@@ -125,8 +116,6 @@ include __DIR__ . '/../layouts/sidebar_admin.php';
                         <div class="st-card p-3 text-center h-100">
                             <h6 class="fw-semibold text-start">Profile Picture</h6>
                             <div class="st-avatar my-3"><?= htmlspecialchars($avatarInitials) ?></div>
-                            <button type="button" class="btn btn-sm btn-primary rounded-pill px-3" disabled>Upload a new one</button>
-                            <div class="mt-2" style="font-size:.75rem;color:#ef4444">Remove photo</div>
                             <hr>
                             <div class="row g-2 text-start mt-1">
                                 <div class="col-4"><div class="st-mini">Total</div><div class="fw-bold"><?= $statTotal ?></div></div>
@@ -173,7 +162,7 @@ include __DIR__ . '/../layouts/sidebar_admin.php';
             <form method="POST" class="st-card p-3" style="max-width:720px">
                 <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
                 <input type="hidden" name="action" value="change_password">
-                <h6 class="fw-semibold mb-3">Security</h6>
+                <h6 class="fw-semibold mb-3">Change Password</h6>
                 <div class="row g-3">
                     <div class="col-12">
                         <label class="form-label small">Current password</label>

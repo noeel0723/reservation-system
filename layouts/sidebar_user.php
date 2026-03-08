@@ -10,7 +10,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
         <!-- Brand -->
         <div class="sidebar-brand">
             <div class="d-flex flex-column align-items-center">
-                <img src="<?= BASE_URL ?>/assets/pictures/Logo_TVRI.svg.png" alt="TVRI" class="sidebar-logo mb-2" width="72" height="72" style="width:72px;height:72px;object-fit:contain;display:block">
+                <img src="<?= BASE_URL ?>/assets/pictures/Logo_TVRI.svg.png" alt="TVRI" class="sidebar-logo mb-2" width="92" height="92" style="width:92px;height:92px;object-fit:contain;display:block">
                 <span class="brand-text"><?= SITE_NAME ?></span>
             </div>
         </div>
@@ -70,7 +70,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
 <div class="offcanvas offcanvas-start" id="sidebarMobile" tabindex="-1">
     <div class="offcanvas-header">
         <div class="d-flex align-items-center">
-            <img src="<?= BASE_URL ?>/assets/pictures/Logo_TVRI.svg.png" alt="TVRI" class="sidebar-logo me-2" width="60" height="60" style="width:60px;height:60px;object-fit:contain;">
+            <img src="<?= BASE_URL ?>/assets/pictures/Logo_TVRI.svg.png" alt="TVRI" class="sidebar-logo me-2" width="72" height="72" style="width:72px;height:72px;object-fit:contain;">
             <span class="fw-bold" style="color: var(--color-midnight-green)"><?= SITE_NAME ?></span>
         </div>
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>

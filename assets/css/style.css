@@ -76,13 +76,20 @@ body {
 }
 
 .sidebar-logo {
-    width: 56px !important;
-    height: 56px !important;
-    max-width: 56px;
-    max-height: 56px;
+    width: 86px !important;
+    height: 86px !important;
+    max-width: 86px;
+    max-height: 86px;
     object-fit: contain;
     flex-shrink: 0;
     display: block;
+}
+
+.offcanvas-header .sidebar-logo {
+    width: 68px !important;
+    height: 68px !important;
+    max-width: 68px;
+    max-height: 68px;
 }
 
 .sidebar .sidebar-nav {
@@ -1036,6 +1043,59 @@ body {
 .period-tabs .period-btn.active {
     background: var(--color-midnight-green);
     color: #fff;
+}
+
+/* ---- Global Theme Harmonization ---- */
+.card,
+.modal-content,
+.offcanvas,
+.table,
+.alert,
+.dropdown-menu {
+    border-radius: 14px;
+}
+
+.card,
+.table,
+.modal-content,
+.offcanvas {
+    border-color: #e5edf3;
+}
+
+.content-area .card,
+.content-area .st-card,
+.content-area .rv-card,
+.content-area .rs-card,
+.content-area .rh-card,
+.content-area .ua-card,
+.content-area .ac-card {
+    box-shadow: 0 8px 22px rgba(0, 69, 84, 0.05);
+}
+
+.btn {
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+.btn-warning {
+    color: #1f2937;
+}
+
+.table thead th {
+    color: #3f5567;
+    font-weight: 700;
+    border-bottom-color: #dce7ef;
+}
+
+.table tbody td {
+    border-color: #e8eff5;
+}
+
+.form-control,
+.form-select,
+.input-group-text {
+    border-radius: 10px;
+    border-color: #dbe7ef;
 }
 
 .period-tabs .period-btn:hover:not(.active) {
