@@ -23,7 +23,7 @@ $filterUser   = trim($_GET['user']   ?? '');
 $filterEntity = trim($_GET['entity'] ?? '');
 $filterDate   = in_array($_GET['date'] ?? '', ['today','week','month']) ? $_GET['date'] : '';
 $page         = max(1, (int)($_GET['p'] ?? 1));
-$perPage      = 30;
+$perPage      = 10;
 $offset       = ($page - 1) * $perPage;
 
 // Build WHERE
@@ -340,10 +340,12 @@ $entityIcon = fn($t) => match($t) {
                 <option value="month" <?= $filterDate === 'month' ? 'selected' : '' ?>>Last 30 Days</option>
             </select>
 
-            <div class="filter-search position-relative">
-                <i class="bi bi-search position-absolute" style="left:11px;top:9px;color:#9ca3af"></i>
-                <input type="text" name="user" class="form-control ps-4 js-auto-filter" placeholder="Search user or activity..."
-                       value="<?= htmlspecialchars($filterUser) ?>">
+            <div class="filter-search">
+                <div class="input-group input-group-sm search-pill-group">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" name="user" class="form-control search-pill-input js-auto-filter" placeholder="Search user or activity..."
+                           value="<?= htmlspecialchars($filterUser) ?>">
+                </div>
             </div>
 
             <select name="entity" class="form-select js-auto-filter-select">
@@ -431,26 +433,45 @@ $entityIcon = fn($t) => match($t) {
     </div>
 
     <?php if ($totalPages > 1): ?>
+    <?php
+    $qBase = '?';
+    if ($filterUser !== '')   $qBase .= 'user=' . urlencode($filterUser) . '&';
+    if ($filterEntity !== '') $qBase .= 'entity=' . urlencode($filterEntity) . '&';
+    if ($filterDate !== '')   $qBase .= 'date=' . urlencode($filterDate) . '&';
+    ?>
     <div class="px-3 py-3 border-top" style="background:#fcfcfd">
-        <nav class="d-flex justify-content-center">
-            <ul class="pagination pagination-sm mb-0">
-                <li class="page-item <?= $page <= 1 ? 'disabled' : '' ?>">
-                    <a class="page-link" href="?<?= http_build_query(array_merge($_GET, ['p' => $page - 1])) ?>">
-                        <i class="bi bi-chevron-left"></i>
-                    </a>
-                </li>
-                <?php for ($i = max(1, $page - 2); $i <= min($totalPages, $page + 2); $i++): ?>
-                <li class="page-item <?= $i === $page ? 'active' : '' ?>">
-                    <a class="page-link" href="?<?= http_build_query(array_merge($_GET, ['p' => $i])) ?>"><?= $i ?></a>
-                </li>
-                <?php endfor; ?>
-                <li class="page-item <?= $page >= $totalPages ? 'disabled' : '' ?>">
-                    <a class="page-link" href="?<?= http_build_query(array_merge($_GET, ['p' => $page + 1])) ?>">
-                        <i class="bi bi-chevron-right"></i>
-                    </a>
-                </li>
-            </ul>
-        </nav>
+        <div class="d-flex align-items-center justify-content-center gap-2 flex-wrap">
+            <a href="<?= $qBase ?>p=<?= max(1, $page - 1) ?>" class="kr-page-nav<?= $page <= 1 ? ' disabled' : '' ?>">
+                <i class="bi bi-chevron-left" style="font-size:0.7rem"></i> Prev
+            </a>
+
+            <div class="kr-page-pills">
+                <?php
+                if ($totalPages <= 7) {
+                    $pageRange = range(1, $totalPages);
+                } elseif ($page <= 4) {
+                    $pageRange = array_merge(range(1, 5), ['...', $totalPages]);
+                } elseif ($page >= $totalPages - 3) {
+                    $pageRange = array_merge([1, '...'], range($totalPages - 4, $totalPages));
+                } else {
+                    $pageRange = [1, '...', $page - 1, $page, $page + 1, '...', $totalPages];
+                }
+                foreach ($pageRange as $pItem):
+                    if ($pItem === '...'):
+                ?>
+                    <span class="kr-page-ellipsis">...</span>
+                <?php else: ?>
+                    <a href="<?= $qBase ?>p=<?= $pItem ?>" class="kr-page-num<?= $pItem === $page ? ' active' : '' ?>"><?= $pItem ?></a>
+                <?php
+                    endif;
+                endforeach;
+                ?>
+            </div>
+
+            <a href="<?= $qBase ?>p=<?= min($totalPages, $page + 1) ?>" class="kr-page-nav<?= $page >= $totalPages ? ' disabled' : '' ?>">
+                Next <i class="bi bi-chevron-right" style="font-size:0.7rem"></i>
+            </a>
+        </div>
     </div>
     <?php endif; ?>
 </div>

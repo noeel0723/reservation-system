@@ -72,9 +72,9 @@ include __DIR__ . '/../layouts/sidebar_admin.php';
             <a href="?role=Admin" class="um-filter <?= $filterRole === 'Admin' ? 'active' : '' ?>">Admin</a>
             <a href="?role=Staff" class="um-filter <?= $filterRole === 'Staff' ? 'active' : '' ?>">Staff</a>
         </div>
-        <div class="input-group input-group-sm" style="max-width:260px">
-            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted" style="font-size:.8rem"></i></span>
-            <input type="text" id="userSearch" class="form-control border-start-0" placeholder="Search by name or username...">
+        <div class="input-group input-group-sm search-pill-group" style="max-width:330px">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input type="text" id="userSearch" class="form-control search-pill-input" placeholder="Search by name or username...">
         </div>
     </div>
 

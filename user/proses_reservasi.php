@@ -147,7 +147,7 @@ switch ($action) {
         ]);
         $wid = (int)$pdo->lastInsertId();
         logActivity($pdo, 'create', 'waitlist', $wid,
-            "User #$userId mendaftar antrian untuk resource #$resourceId.");
+            "User #$userId joined queue for resource #$resourceId.");
         unset($_SESSION['waitlist_candidate'], $_SESSION['reservation_conflicts']);
         setFlash('success', 'Anda telah terdaftar dalam antrian. Kami akan memberi tahu jika slot tersedia.');
         header('Location: ' . BASE_URL . '/user/waitlist.php');
@@ -155,26 +155,26 @@ switch ($action) {
 
     case 'cancel_waitlist':
         $wid = (int)($_POST['waitlist_id'] ?? 0);
-        if ($wid <= 0) { $respond(false, 'ID antrian tidak valid.', BASE_URL . '/user/waitlist.php'); }
+        if ($wid <= 0) { $respond(false, 'Invalid queue ID.', BASE_URL . '/user/waitlist.php'); }
         // Security: only allow cancelling own entry
         $own = $pdo->prepare("SELECT id FROM waitlist WHERE id = :id AND user_id = :uid");
         $own->execute([':id' => $wid, ':uid' => $userId]);
-        if (!$own->fetch()) { $respond(false, 'Antrian tidak ditemukan.', BASE_URL . '/user/waitlist.php'); }
+        if (!$own->fetch()) { $respond(false, 'Queue entry not found.', BASE_URL . '/user/waitlist.php'); }
 
         $pdo->prepare("UPDATE waitlist SET status = 'Cancelled' WHERE id = :id")->execute([':id' => $wid]);
-        logActivity($pdo, 'cancel', 'waitlist', $wid, "User #$userId membatalkan antrian #$wid.");
-        $respond(true, 'Antrian berhasil dibatalkan.', BASE_URL . '/user/waitlist.php');
+        logActivity($pdo, 'cancel', 'waitlist', $wid, "User #$userId cancelled queue entry #$wid.");
+        $respond(true, 'Queue entry cancelled successfully.', BASE_URL . '/user/waitlist.php');
 
     case 'convert_waitlist':
         $wid = (int)($_POST['waitlist_id'] ?? 0);
-        if ($wid <= 0) { $respond(false, 'ID antrian tidak valid.', BASE_URL . '/user/waitlist.php'); }
+        if ($wid <= 0) { $respond(false, 'Invalid queue ID.', BASE_URL . '/user/waitlist.php'); }
 
         $entry = $pdo->prepare(
             "SELECT * FROM waitlist WHERE id = :id AND user_id = :uid AND status = 'Notified'"
         );
         $entry->execute([':id' => $wid, ':uid' => $userId]);
         $w = $entry->fetch();
-        if (!$w) { $respond(false, 'Antrian tidak ditemukan atau belum siap dikonversi.', BASE_URL . '/user/waitlist.php'); }
+        if (!$w) { $respond(false, 'Queue entry not found or not ready to convert.', BASE_URL . '/user/waitlist.php'); }
 
         $data = [
             'user_id'       => $userId,
@@ -188,8 +188,8 @@ switch ($action) {
         if ($result['success']) {
             $pdo->prepare("UPDATE waitlist SET status = 'Converted' WHERE id = :id")->execute([':id' => $wid]);
             logActivity($pdo, 'create', 'reservation', (int)($result['id'] ?? 0),
-                "User #$userId mengonversi antrian #$wid menjadi reservasi.");
-            $respond(true, 'Reservasi berhasil dibuat dari antrian!', BASE_URL . '/user/riwayat.php');
+                "User #$userId converted queue #$wid into reservation.");
+            $respond(true, 'Reservation created successfully from queue.', BASE_URL . '/user/riwayat.php');
         } else {
             $respond(false, $result['message'], BASE_URL . '/user/waitlist.php');
         }

@@ -167,8 +167,8 @@ $isCustomDuration = !in_array($currentDuration, $durationPresets);
     <div class="ar-section pb-3">
         <h4 class="fw-bold mb-1" style="font-size:1.35rem">Reservation Rules</h4>
         <p class="text-muted mb-0" style="font-size:0.85rem">
-            Konfigurasikan aturan yang berlaku untuk semua pengajuan reservasi pengguna Staff.
-            Nilai <strong>0</strong> berarti tidak dibatasi.
+            Configure rules applied to all staff reservation requests.
+            A value of <strong>0</strong> means no limit.
         </p>
     </div>
 

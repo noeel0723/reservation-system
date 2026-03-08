@@ -18,13 +18,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
     $ok = false;
-    $msg = 'Aksi tidak valid.';
+    $msg = 'Invalid action.';
 
     if ($wid > 0 && $action === 'cancel_admin') {
         $pdo->prepare("UPDATE waitlist SET status = 'Cancelled' WHERE id = :id")->execute([':id' => $wid]);
-        logActivity($pdo, 'cancel', 'waitlist', $wid, "Admin membatalkan antrian #$wid.");
+        logActivity($pdo, 'cancel', 'waitlist', $wid, "Admin cancelled queue entry #$wid.");
         $ok = true;
-        $msg = 'Entri antrian berhasil dibatalkan.';
+        $msg = 'Queue entry cancelled successfully.';
     }
 
     $isAjax = strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'xmlhttprequest';
@@ -66,7 +66,7 @@ foreach ($allEntries as $entry) {
     if (empty($events)) {
         $events[] = [
             'action' => 'create',
-            'description' => 'Entri antrian dibuat.',
+            'description' => 'Queue entry created.',
             'user_nama' => $entry['user_nama'] ?? '-',
             'created_at' => $entry['created_at'] ?? date('Y-m-d H:i:s'),
         ];
@@ -141,33 +141,29 @@ $wBadge = static function (string $s): string {
     <div class="d-flex align-items-start justify-content-between gap-2 flex-wrap mb-3">
         <div>
             <div class="qx-title">Waitlist Queue</div>
-            <div class="qx-subtitle">Klik baris untuk melihat detail cepat di panel samping.</div>
-        </div>
-        <div class="btn-group btn-group-sm wl-view-toggle" role="group" aria-label="View mode">
-            <button type="button" class="btn btn-outline-secondary" data-view="table"><i class="bi bi-table me-1"></i>Table</button>
-            <button type="button" class="btn btn-outline-secondary" data-view="cards"><i class="bi bi-grid me-1"></i>Cards</button>
+            <div class="qx-subtitle">Click any row to open quick details in the side panel.</div>
         </div>
     </div>
 
     <div class="qx-toolbar d-flex align-items-center gap-2 flex-wrap mb-3">
-        <div class="input-group input-group-sm" style="max-width:300px">
-            <span class="input-group-text qx-tool-input"><i class="bi bi-search"></i></span>
-            <input type="text" id="queueQuickSearch" class="form-control qx-tool-input" placeholder="Search user, resource, need...">
+        <div class="input-group input-group-sm search-pill-group" style="max-width:330px">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input type="text" id="queueQuickSearch" class="form-control search-pill-input" placeholder="Search user, resource, need...">
         </div>
         <select id="queueSortSelect" class="form-select form-select-sm qx-tool-select" style="max-width:180px">
             <option value="newest">Newest</option>
             <option value="oldest">Oldest</option>
         </select>
-        <div class="ms-auto text-muted" style="font-size:.75rem"><i class="bi bi-funnel me-1"></i>Quick filter lokal</div>
+        <div class="ms-auto text-muted" style="font-size:.75rem"><i class="bi bi-funnel me-1"></i>Quick local filter</div>
     </div>
 
     <div class="row g-3 mb-3">
         <?php
         $summary = [
-            ['Waiting', 'Menunggu', 'bi-hourglass-split', '#fff8e8', '#915d00'],
-            ['Notified', 'Dinotifikasi', 'bi-bell-fill', '#ecfdf3', '#15803d'],
-            ['Converted', 'Dikonversi', 'bi-check2-all', '#eff6ff', '#1d4ed8'],
-            ['Expired', 'Kedaluwarsa', 'bi-clock-history', '#f4f5f7', '#4b5563'],
+            ['Waiting', 'Waiting', 'bi-hourglass-split', '#fff8e8', '#915d00'],
+            ['Notified', 'Notified', 'bi-bell-fill', '#ecfdf3', '#15803d'],
+            ['Converted', 'Converted', 'bi-check2-all', '#eff6ff', '#1d4ed8'],
+            ['Expired', 'Expired', 'bi-clock-history', '#f4f5f7', '#4b5563'],
         ];
         foreach ($summary as [$key, $label, $icon, $bg, $color]):
             $count = (int)($statusCounts[$key] ?? 0);
@@ -192,12 +188,12 @@ $wBadge = static function (string $s): string {
         <div class="d-flex align-items-center gap-2 flex-wrap">
             <?php
             $pills = [
-                '' => 'Semua',
-                'Waiting' => 'Menunggu',
-                'Notified' => 'Dinotifikasi',
-                'Converted' => 'Dikonversi',
-                'Expired' => 'Kedaluwarsa',
-                'Cancelled' => 'Dibatalkan',
+                '' => 'All',
+                'Waiting' => 'Waiting',
+                'Notified' => 'Notified',
+                'Converted' => 'Converted',
+                'Expired' => 'Expired',
+                'Cancelled' => 'Cancelled',
             ];
             foreach ($pills as $k => $label):
             ?>
@@ -206,10 +202,10 @@ $wBadge = static function (string $s): string {
             </a>
             <?php endforeach; ?>
         </div>
-        <div class="qx-click-hint"><i class="bi bi-cursor me-1"></i>Quick detail drawer aktif</div>
+        <div class="qx-click-hint"><i class="bi bi-cursor me-1"></i>Quick detail drawer enabled</div>
     </div>
 
-    <div id="queueTableWrap" class="wl-surface overflow-hidden">
+    <div id="queueTableWrap" class="wl-surface overflow-hidden d-none d-lg-block">
         <div class="table-responsive">
             <table class="table table-hover mb-0" style="font-size:.83rem">
                 <thead class="wl-soft-header">
@@ -217,11 +213,11 @@ $wBadge = static function (string $s): string {
                         <th>#</th>
                         <th>User</th>
                         <th>Resource</th>
-                        <th>Jadwal</th>
-                        <th>Keperluan</th>
+                        <th>Schedule</th>
+                        <th>Purpose</th>
                         <th>Status</th>
-                        <th>Didaftar</th>
-                        <th class="text-end">Aksi</th>
+                        <th>Created</th>
+                        <th class="text-end">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -229,7 +225,7 @@ $wBadge = static function (string $s): string {
                     <tr>
                         <td colspan="8" class="text-center text-muted py-5">
                             <i class="bi bi-inbox d-block mb-2" style="font-size:2rem;opacity:.35"></i>
-                            Tidak ada entri antrian.
+                            No queue entries available.
                         </td>
                     </tr>
                 <?php else: ?>
@@ -263,7 +259,7 @@ $wBadge = static function (string $s): string {
                             <td class="qx-row-muted" style="white-space:nowrap"><?= date('d/m/Y H:i', strtotime($e['created_at'])) ?></td>
                             <td class="text-end qx-row-actions" onclick="event.stopPropagation()">
                                 <?php if (in_array($e['status'], ['Waiting', 'Notified'], true)): ?>
-                                <form method="POST" class="d-inline js-optimistic-form" data-entry-id="<?= $eid ?>" data-success-message="Antrian berhasil dibatalkan.">
+                                <form method="POST" class="d-inline js-optimistic-form" data-entry-id="<?= $eid ?>" data-success-message="Queue entry cancelled successfully.">
                                     <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
                                     <input type="hidden" name="action" value="cancel_admin">
                                     <input type="hidden" name="waitlist_id" value="<?= $eid ?>">
@@ -283,13 +279,13 @@ $wBadge = static function (string $s): string {
         </div>
     </div>
 
-    <div id="queueCardWrap" class="d-none">
+    <div id="queueCardWrap" class="d-lg-none">
         <div class="row g-3">
             <?php if (empty($allEntries)): ?>
                 <div class="col-12">
                     <div class="qx-card p-4 text-center text-muted">
                         <i class="bi bi-inbox d-block mb-2" style="font-size:2rem;opacity:.35"></i>
-                        Tidak ada entri antrian.
+                        No queue entries available.
                     </div>
                 </div>
             <?php else: ?>
@@ -316,16 +312,16 @@ $wBadge = static function (string $s): string {
                             <div class="qx-row-muted mb-3"><i class="bi bi-chat-left-text me-1"></i><?= htmlspecialchars(mb_strimwidth($e['keperluan'], 0, 72, '...')) ?></div>
                             <div onclick="event.stopPropagation()">
                                 <?php if (in_array($e['status'], ['Waiting', 'Notified'], true)): ?>
-                                <form method="POST" class="js-optimistic-form" data-entry-id="<?= $eid ?>" data-success-message="Antrian berhasil dibatalkan.">
+                                <form method="POST" class="js-optimistic-form" data-entry-id="<?= $eid ?>" data-success-message="Queue entry cancelled successfully.">
                                     <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
                                     <input type="hidden" name="action" value="cancel_admin">
                                     <input type="hidden" name="waitlist_id" value="<?= $eid ?>">
                                     <button type="submit" class="btn btn-outline-danger btn-sm w-100">
-                                        <i class="bi bi-x-lg me-1"></i>Batalkan Antrian
+                                        <i class="bi bi-x-lg me-1"></i>Cancel Queue
                                     </button>
                                 </form>
                                 <?php else: ?>
-                                <div class="text-muted small">Tidak ada aksi tersedia.</div>
+                                <div class="text-muted small">No actions available.</div>
                                 <?php endif; ?>
                             </div>
                         </div>
@@ -354,11 +350,11 @@ $wBadge = static function (string $s): string {
             <div class="qx-row-muted" id="qdType">-</div>
         </div>
         <div class="mb-3">
-            <div class="qx-row-muted mb-1">Jadwal</div>
+            <div class="qx-row-muted mb-1">Schedule</div>
             <div class="fw-semibold" id="qdSchedule">-</div>
         </div>
         <div class="mb-3">
-            <div class="qx-row-muted mb-1">Keperluan</div>
+            <div class="qx-row-muted mb-1">Purpose</div>
             <div id="qdNeed">-</div>
         </div>
         <div class="mb-3">
@@ -366,7 +362,7 @@ $wBadge = static function (string $s): string {
             <div id="qdStatus">-</div>
         </div>
         <div class="mb-4">
-            <div class="qx-row-muted mb-1">Dibuat</div>
+            <div class="qx-row-muted mb-1">Created</div>
             <div class="qx-drawer-meta" id="qdCreated">-</div>
         </div>
         <h6 class="fw-semibold mb-2">Activity Timeline</h6>
@@ -377,7 +373,7 @@ $wBadge = static function (string $s): string {
 <div class="position-fixed bottom-0 end-0 p-3" style="z-index:1080">
     <div id="waitlistToast" class="toast align-items-center text-bg-dark border-0" role="status" aria-live="polite" aria-atomic="true">
         <div class="d-flex">
-            <div class="toast-body" id="waitlistToastBody">Memproses aksi...</div>
+            <div class="toast-body" id="waitlistToastBody">Processing action...</div>
             <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
         </div>
     </div>
@@ -390,7 +386,6 @@ $wBadge = static function (string $s): string {
     var drawer = drawerEl ? new bootstrap.Offcanvas(drawerEl) : null;
     var toastEl = document.getElementById('waitlistToast');
     var toast = toastEl ? new bootstrap.Toast(toastEl, { delay: 1800 }) : null;
-    var savedMode = localStorage.getItem('admin_queue_view_mode');
 
     function showToast(message) {
         if (!toastEl || !toast) return;
@@ -400,26 +395,6 @@ $wBadge = static function (string $s): string {
 
     function statusHtmlProcessing() {
         return '<span class="res-badge qx-status-pending"><i class="bi bi-arrow-repeat res-badge-icon"></i>Processing</span>';
-    }
-
-    function applyView(mode, persist) {
-        var tableWrap = document.getElementById('queueTableWrap');
-        var cardWrap = document.getElementById('queueCardWrap');
-        if (!tableWrap || !cardWrap) return;
-
-        tableWrap.classList.toggle('d-none', mode !== 'table');
-        cardWrap.classList.toggle('d-none', mode !== 'cards');
-
-        document.querySelectorAll('.wl-view-toggle [data-view]').forEach(function (btn) {
-            btn.classList.toggle('btn-dark', btn.dataset.view === mode);
-            btn.classList.toggle('text-white', btn.dataset.view === mode);
-            btn.classList.toggle('btn-outline-secondary', btn.dataset.view !== mode);
-        });
-
-        if (persist) {
-            localStorage.setItem('admin_queue_view_mode', mode);
-            savedMode = mode;
-        }
     }
 
     function applySearchAndSort() {
@@ -460,11 +435,11 @@ $wBadge = static function (string $s): string {
     }
 
     function normalizeActionLabel(action) {
-        if (action === 'create') return 'Dibuat';
-        if (action === 'cancel') return 'Dibatalkan';
-        if (action === 'update') return 'Diperbarui';
-        if (action === 'approved') return 'Disetujui';
-        if (action === 'rejected') return 'Ditolak';
+        if (action === 'create') return 'Created';
+        if (action === 'cancel') return 'Cancelled';
+        if (action === 'update') return 'Updated';
+        if (action === 'approved') return 'Approved';
+        if (action === 'rejected') return 'Rejected';
         return action;
     }
 
@@ -474,7 +449,7 @@ $wBadge = static function (string $s): string {
 
         var events = timelineData[String(entryId)] || [];
         if (!events.length) {
-            list.innerHTML = '<li>Tidak ada riwayat aktivitas.</li>';
+            list.innerHTML = '<li>No activity timeline yet.</li>';
             return;
         }
 
@@ -504,25 +479,10 @@ $wBadge = static function (string $s): string {
         });
     });
 
-    document.querySelectorAll('.wl-view-toggle [data-view]').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-            applyView(btn.dataset.view, true);
-        });
-    });
-
     var searchInput = document.getElementById('queueQuickSearch');
     var sortSelect = document.getElementById('queueSortSelect');
     if (searchInput) searchInput.addEventListener('input', applySearchAndSort);
     if (sortSelect) sortSelect.addEventListener('change', applySearchAndSort);
-
-    var autoMode = window.matchMedia('(max-width: 991.98px)').matches ? 'cards' : 'table';
-    applyView(savedMode || autoMode, false);
-    window.addEventListener('resize', function () {
-        if (!savedMode) {
-            var dynamic = window.matchMedia('(max-width: 991.98px)').matches ? 'cards' : 'table';
-            applyView(dynamic, false);
-        }
-    });
 
     applySearchAndSort();
 
@@ -540,7 +500,7 @@ $wBadge = static function (string $s): string {
 
             var buttons = form.querySelectorAll('button');
             buttons.forEach(function (b) { b.disabled = true; });
-            showToast('Menyimpan perubahan...');
+            showToast('Saving changes...');
 
             fetch(form.getAttribute('action') || window.location.href, {
                 method: 'POST',
@@ -551,16 +511,16 @@ $wBadge = static function (string $s): string {
                 return res.json();
             }).then(function (data) {
                 if (!data || !data.success) {
-                    throw new Error((data && data.message) ? data.message : 'Gagal memproses aksi.');
+                    throw new Error((data && data.message) ? data.message : 'Failed to process action.');
                 }
-                showToast(data.message || form.dataset.successMessage || 'Aksi berhasil.');
+                showToast(data.message || form.dataset.successMessage || 'Action completed successfully.');
                 setTimeout(function () { window.location.reload(); }, 420);
             }).catch(function (err) {
                 statusNodes.forEach(function (node, i) {
                     node.innerHTML = original[i] || node.innerHTML;
                 });
                 buttons.forEach(function (b) { b.disabled = false; });
-                showToast(err.message || 'Terjadi kesalahan, perubahan dibatalkan.');
+                showToast(err.message || 'An error occurred, changes were rolled back.');
             });
         });
     });

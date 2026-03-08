@@ -1111,6 +1111,40 @@ body {
     border-color: #dbe7ef;
 }
 
+/* ---- Search Pill (Global) ---- */
+.search-pill-group {
+    border: 2px solid rgba(0, 69, 84, 0.42);
+    border-radius: 999px;
+    background: #ffffff;
+    padding: 0.08rem;
+    overflow: hidden;
+}
+
+.search-pill-group .input-group-text {
+    border: none !important;
+    background: transparent !important;
+    color: var(--color-midnight-green);
+    padding-left: 0.9rem;
+    padding-right: 0.45rem;
+}
+
+.search-pill-input {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    font-size: 0.84rem;
+    color: var(--text-dark);
+    padding-right: 1rem;
+}
+
+.search-pill-input::placeholder {
+    color: #7a8d9d;
+}
+
+.search-pill-input:focus {
+    box-shadow: none !important;
+}
+
 /* ---- Waitlist / Queue Modern Board ---- */
 .wl-board {
     background: #eaf1f7;

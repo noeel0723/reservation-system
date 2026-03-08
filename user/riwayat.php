@@ -101,25 +101,32 @@ include __DIR__ . '/../layouts/sidebar_user.php';
     </div>
 
     <div class="px-3 px-md-4 pt-3">
-        <div class="rh-tabs mb-3">
-            <a href="<?= tabLink('', $dateFrom, $dateTo, $searchQuery, $sortBy) ?>" class="rh-tab <?= !$filterStatus ? 'active' : '' ?>">All (<?= $counts['all'] ?>)</a>
-            <a href="<?= tabLink('Pending', $dateFrom, $dateTo, $searchQuery, $sortBy) ?>" class="rh-tab <?= $filterStatus === 'Pending' ? 'active' : '' ?>">Pending (<?= $counts['Pending'] ?>)</a>
-            <a href="<?= tabLink('Approved', $dateFrom, $dateTo, $searchQuery, $sortBy) ?>" class="rh-tab <?= $filterStatus === 'Approved' ? 'active' : '' ?>">Approved (<?= $counts['Approved'] ?>)</a>
-            <a href="<?= tabLink('Rejected', $dateFrom, $dateTo, $searchQuery, $sortBy) ?>" class="rh-tab <?= $filterStatus === 'Rejected' ? 'active' : '' ?>">Rejected (<?= $counts['Rejected'] ?>)</a>
-            <a href="<?= tabLink('Cancelled', $dateFrom, $dateTo, $searchQuery, $sortBy) ?>" class="rh-tab <?= $filterStatus === 'Cancelled' ? 'active' : '' ?>">Cancelled (<?= $counts['Cancelled'] ?>)</a>
-            <a href="<?= tabLink('Finished', $dateFrom, $dateTo, $searchQuery, $sortBy) ?>" class="rh-tab <?= $filterStatus === 'Finished' ? 'active' : '' ?>">Finished (<?= $counts['Finished'] ?>)</a>
+        <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap mb-3">
+            <div class="rh-tabs mb-0">
+                <a href="<?= tabLink('', $dateFrom, $dateTo, $searchQuery, $sortBy) ?>" class="rh-tab <?= !$filterStatus ? 'active' : '' ?>">All (<?= $counts['all'] ?>)</a>
+                <a href="<?= tabLink('Pending', $dateFrom, $dateTo, $searchQuery, $sortBy) ?>" class="rh-tab <?= $filterStatus === 'Pending' ? 'active' : '' ?>">Pending (<?= $counts['Pending'] ?>)</a>
+                <a href="<?= tabLink('Approved', $dateFrom, $dateTo, $searchQuery, $sortBy) ?>" class="rh-tab <?= $filterStatus === 'Approved' ? 'active' : '' ?>">Approved (<?= $counts['Approved'] ?>)</a>
+                <a href="<?= tabLink('Rejected', $dateFrom, $dateTo, $searchQuery, $sortBy) ?>" class="rh-tab <?= $filterStatus === 'Rejected' ? 'active' : '' ?>">Rejected (<?= $counts['Rejected'] ?>)</a>
+                <a href="<?= tabLink('Cancelled', $dateFrom, $dateTo, $searchQuery, $sortBy) ?>" class="rh-tab <?= $filterStatus === 'Cancelled' ? 'active' : '' ?>">Cancelled (<?= $counts['Cancelled'] ?>)</a>
+                <a href="<?= tabLink('Finished', $dateFrom, $dateTo, $searchQuery, $sortBy) ?>" class="rh-tab <?= $filterStatus === 'Finished' ? 'active' : '' ?>">Finished (<?= $counts['Finished'] ?>)</a>
+            </div>
+            <form method="GET" class="m-0" style="min-width:min(100%,330px)">
+                <?php if ($filterStatus): ?><input type="hidden" name="status" value="<?= htmlspecialchars($filterStatus) ?>"><?php endif; ?>
+                <?php if ($dateFrom): ?><input type="hidden" name="date_from" value="<?= htmlspecialchars($dateFrom) ?>"><?php endif; ?>
+                <?php if ($dateTo): ?><input type="hidden" name="date_to" value="<?= htmlspecialchars($dateTo) ?>"><?php endif; ?>
+                <?php if ($sortBy && $sortBy !== 'newest'): ?><input type="hidden" name="sort" value="<?= htmlspecialchars($sortBy) ?>"><?php endif; ?>
+                <div class="input-group input-group-sm search-pill-group">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" name="q" class="form-control search-pill-input" placeholder="Search resource or purpose" value="<?= htmlspecialchars($searchQuery) ?>">
+                </div>
+            </form>
         </div>
     </div>
 
     <div class="rh-tools">
         <form method="GET" class="row g-2 align-items-center" id="historyFilterForm">
             <?php if ($filterStatus): ?><input type="hidden" name="status" value="<?= htmlspecialchars($filterStatus) ?>"><?php endif; ?>
-            <div class="col-12 col-md-4">
-                <div class="input-group input-group-sm">
-                    <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-                    <input type="text" name="q" class="form-control" placeholder="Search resource or purpose" value="<?= htmlspecialchars($searchQuery) ?>">
-                </div>
-            </div>
+            <input type="hidden" name="q" value="<?= htmlspecialchars($searchQuery) ?>">
             <div class="col-6 col-md-2">
                 <input type="date" class="form-control form-control-sm" name="date_from" value="<?= htmlspecialchars($dateFrom) ?>">
             </div>

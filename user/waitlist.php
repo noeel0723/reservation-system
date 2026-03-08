@@ -38,7 +38,7 @@ foreach ($entries as $entry) {
     if (empty($events)) {
         $events[] = [
             'action' => 'create',
-            'description' => 'Anda mendaftar antrian.',
+            'description' => 'You joined the queue.',
             'user_nama' => $entry['user_nama'] ?? '-',
             'created_at' => $entry['created_at'] ?? date('Y-m-d H:i:s'),
         ];
@@ -106,32 +106,28 @@ $notifiedCount = count(array_filter($entries, static fn($e) => $e['status'] === 
     <div class="d-flex align-items-start justify-content-between gap-2 flex-wrap mb-3">
         <div>
             <div class="mw-headline">My Waitlist</div>
-            <div class="mw-subline">Tampilan ringkas antrian Anda dengan quick detail drawer.</div>
-        </div>
-        <div class="btn-group btn-group-sm wl-view-toggle" role="group" aria-label="View mode">
-            <button type="button" class="btn btn-outline-secondary" data-view="table"><i class="bi bi-table me-1"></i>Table</button>
-            <button type="button" class="btn btn-outline-secondary" data-view="cards"><i class="bi bi-grid me-1"></i>Cards</button>
+            <div class="mw-subline">Compact queue view with quick details in a side panel.</div>
         </div>
     </div>
 
     <div class="mw-toolbar d-flex align-items-center gap-2 flex-wrap mb-3">
-        <div class="input-group input-group-sm" style="max-width:300px">
-            <span class="input-group-text mw-tool-input"><i class="bi bi-search"></i></span>
-            <input type="text" id="myWaitQuickSearch" class="form-control mw-tool-input" placeholder="Search resource, need, status...">
+        <div class="input-group input-group-sm search-pill-group" style="max-width:330px">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input type="text" id="myWaitQuickSearch" class="form-control search-pill-input" placeholder="Search resource, need, status...">
         </div>
         <select id="myWaitSortSelect" class="form-select form-select-sm mw-tool-select" style="max-width:180px">
             <option value="newest">Newest</option>
             <option value="oldest">Oldest</option>
         </select>
-        <div class="ms-auto text-muted" style="font-size:.75rem"><i class="bi bi-funnel me-1"></i>Quick filter lokal</div>
+        <div class="ms-auto text-muted" style="font-size:.75rem"><i class="bi bi-funnel me-1"></i>Quick local filter</div>
     </div>
 
     <?php if ($notifiedCount > 0): ?>
     <div class="mw-notify p-3 mb-3 d-flex align-items-start gap-3">
         <i class="bi bi-bell-fill mt-1" style="color:#15803d"></i>
         <div>
-            <div class="fw-semibold" style="color:#166534">Ada <?= $notifiedCount ?> antrian siap dikonversi.</div>
-            <div class="small text-muted">Klik tombol "Buat Reservasi" agar slot tidak diambil pengguna lain.</div>
+            <div class="fw-semibold" style="color:#166534"><?= $notifiedCount ?> queue entries are ready to convert.</div>
+            <div class="small text-muted">Use the "Create Reservation" action before the slot is taken by others.</div>
         </div>
     </div>
     <?php endif; ?>
@@ -139,24 +135,24 @@ $notifiedCount = count(array_filter($entries, static fn($e) => $e['status'] === 
     <?php if (empty($entries)): ?>
         <div class="mw-empty p-4 text-center">
             <i class="bi bi-inbox d-block mb-2" style="font-size:2.2rem;color:#96abc0"></i>
-            <div class="fw-semibold text-muted mb-1">Belum ada antrian</div>
-            <div class="small text-muted mb-3">Jika jadwal penuh, Anda bisa menambahkan antrian dari halaman New Reservation.</div>
+            <div class="fw-semibold text-muted mb-1">No waitlist entries yet</div>
+            <div class="small text-muted mb-3">When schedules are full, you can join the queue from the New Reservation page.</div>
             <a href="<?= BASE_URL ?>/user/reservasi_baru.php" class="btn btn-primary rounded-pill px-4">
                 <i class="bi bi-plus-lg me-1"></i>New Reservation
             </a>
         </div>
     <?php else: ?>
-        <div id="myWaitTableWrap" class="wl-surface overflow-hidden">
+        <div id="myWaitTableWrap" class="wl-surface overflow-hidden d-none d-lg-block">
             <div class="table-responsive">
                 <table class="table table-hover mb-0" style="font-size:.83rem">
                     <thead class="wl-soft-header">
                         <tr>
                             <th>Resource</th>
-                            <th>Jadwal</th>
-                            <th>Keperluan</th>
+                            <th>Schedule</th>
+                            <th>Purpose</th>
                             <th>Status</th>
-                            <th>Didaftar</th>
-                            <th class="text-end">Aksi</th>
+                            <th>Created</th>
+                            <th class="text-end">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -189,7 +185,7 @@ $notifiedCount = count(array_filter($entries, static fn($e) => $e['status'] === 
                                         <input type="hidden" name="action" value="convert_waitlist">
                                         <input type="hidden" name="waitlist_id" value="<?= $eid ?>">
                                         <button type="submit" class="btn btn-success btn-sm">
-                                            <i class="bi bi-check-circle me-1"></i>Buat Reservasi
+                                            <i class="bi bi-check-circle me-1"></i>Create Reservation
                                         </button>
                                     </form>
                                     <?php endif; ?>
@@ -212,7 +208,7 @@ $notifiedCount = count(array_filter($entries, static fn($e) => $e['status'] === 
             </div>
         </div>
 
-        <div id="myWaitCardWrap" class="d-none">
+        <div id="myWaitCardWrap" class="d-lg-none">
             <div class="row g-3">
                 <?php foreach ($entries as $e): ?>
                     <?php
@@ -237,7 +233,7 @@ $notifiedCount = count(array_filter($entries, static fn($e) => $e['status'] === 
                                     <input type="hidden" name="action" value="convert_waitlist">
                                     <input type="hidden" name="waitlist_id" value="<?= $eid ?>">
                                     <button type="submit" class="btn btn-success btn-sm w-100">
-                                        <i class="bi bi-check-circle me-1"></i>Buat Reservasi
+                                        <i class="bi bi-check-circle me-1"></i>Create Reservation
                                     </button>
                                 </form>
                                 <?php endif; ?>
@@ -247,7 +243,7 @@ $notifiedCount = count(array_filter($entries, static fn($e) => $e['status'] === 
                                     <input type="hidden" name="action" value="cancel_waitlist">
                                     <input type="hidden" name="waitlist_id" value="<?= $eid ?>">
                                     <button type="submit" class="btn btn-outline-danger btn-sm w-100">
-                                        <i class="bi bi-x-lg me-1"></i>Batalkan
+                                        <i class="bi bi-x-lg me-1"></i>Cancel
                                     </button>
                                 </form>
                                 <?php endif; ?>
@@ -273,11 +269,11 @@ $notifiedCount = count(array_filter($entries, static fn($e) => $e['status'] === 
             <div class="mw-meta" id="mwType">-</div>
         </div>
         <div class="mb-3">
-            <div class="mw-status mb-1">Jadwal</div>
+            <div class="mw-status mb-1">Schedule</div>
             <div class="fw-semibold" id="mwSchedule">-</div>
         </div>
         <div class="mb-3">
-            <div class="mw-status mb-1">Keperluan</div>
+            <div class="mw-status mb-1">Purpose</div>
             <div id="mwNeed">-</div>
         </div>
         <div class="mb-3">
@@ -285,7 +281,7 @@ $notifiedCount = count(array_filter($entries, static fn($e) => $e['status'] === 
             <div id="mwStatus">-</div>
         </div>
         <div class="mb-4">
-            <div class="mw-status mb-1">Dibuat</div>
+            <div class="mw-status mb-1">Created</div>
             <div class="mw-meta" id="mwCreated">-</div>
         </div>
         <h6 class="fw-semibold mb-2">Activity Timeline</h6>
@@ -296,7 +292,7 @@ $notifiedCount = count(array_filter($entries, static fn($e) => $e['status'] === 
 <div class="position-fixed bottom-0 end-0 p-3" style="z-index:1080">
     <div id="myWaitToast" class="toast align-items-center text-bg-dark border-0" role="status" aria-live="polite" aria-atomic="true">
         <div class="d-flex">
-            <div class="toast-body" id="myWaitToastBody">Memproses aksi...</div>
+            <div class="toast-body" id="myWaitToastBody">Processing action...</div>
             <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
         </div>
     </div>
@@ -309,32 +305,11 @@ $notifiedCount = count(array_filter($entries, static fn($e) => $e['status'] === 
     var drawer = drawerEl ? new bootstrap.Offcanvas(drawerEl) : null;
     var toastEl = document.getElementById('myWaitToast');
     var toast = toastEl ? new bootstrap.Toast(toastEl, { delay: 1900 }) : null;
-    var savedMode = localStorage.getItem('user_waitlist_view_mode');
 
     function showToast(message) {
         if (!toastEl || !toast) return;
         document.getElementById('myWaitToastBody').textContent = message;
         toast.show();
-    }
-
-    function applyView(mode, persist) {
-        var tableWrap = document.getElementById('myWaitTableWrap');
-        var cardWrap = document.getElementById('myWaitCardWrap');
-        if (!tableWrap || !cardWrap) return;
-
-        tableWrap.classList.toggle('d-none', mode !== 'table');
-        cardWrap.classList.toggle('d-none', mode !== 'cards');
-
-        document.querySelectorAll('.wl-view-toggle [data-view]').forEach(function (btn) {
-            btn.classList.toggle('btn-dark', btn.dataset.view === mode);
-            btn.classList.toggle('text-white', btn.dataset.view === mode);
-            btn.classList.toggle('btn-outline-secondary', btn.dataset.view !== mode);
-        });
-
-        if (persist) {
-            localStorage.setItem('user_waitlist_view_mode', mode);
-            savedMode = mode;
-        }
     }
 
     function applySearchAndSort() {
@@ -375,11 +350,11 @@ $notifiedCount = count(array_filter($entries, static fn($e) => $e['status'] === 
     }
 
     function normalizeActionLabel(action) {
-        if (action === 'create') return 'Dibuat';
-        if (action === 'cancel') return 'Dibatalkan';
-        if (action === 'update') return 'Diperbarui';
-        if (action === 'approved') return 'Disetujui';
-        if (action === 'rejected') return 'Ditolak';
+        if (action === 'create') return 'Created';
+        if (action === 'cancel') return 'Cancelled';
+        if (action === 'update') return 'Updated';
+        if (action === 'approved') return 'Approved';
+        if (action === 'rejected') return 'Rejected';
         return action;
     }
 
@@ -388,7 +363,7 @@ $notifiedCount = count(array_filter($entries, static fn($e) => $e['status'] === 
         if (!list) return;
         var events = timelineData[String(entryId)] || [];
         if (!events.length) {
-            list.innerHTML = '<li>Tidak ada riwayat aktivitas.</li>';
+            list.innerHTML = '<li>No activity timeline yet.</li>';
             return;
         }
 
@@ -420,25 +395,10 @@ $notifiedCount = count(array_filter($entries, static fn($e) => $e['status'] === 
         });
     });
 
-    document.querySelectorAll('.wl-view-toggle [data-view]').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-            applyView(btn.dataset.view, true);
-        });
-    });
-
     var searchInput = document.getElementById('myWaitQuickSearch');
     var sortSelect = document.getElementById('myWaitSortSelect');
     if (searchInput) searchInput.addEventListener('input', applySearchAndSort);
     if (sortSelect) sortSelect.addEventListener('change', applySearchAndSort);
-
-    var autoMode = window.matchMedia('(max-width: 991.98px)').matches ? 'cards' : 'table';
-    applyView(savedMode || autoMode, false);
-    window.addEventListener('resize', function () {
-        if (!savedMode) {
-            var dynamic = window.matchMedia('(max-width: 991.98px)').matches ? 'cards' : 'table';
-            applyView(dynamic, false);
-        }
-    });
 
     applySearchAndSort();
 
@@ -456,7 +416,7 @@ $notifiedCount = count(array_filter($entries, static fn($e) => $e['status'] === 
 
             var buttons = form.querySelectorAll('button');
             buttons.forEach(function (btn) { btn.disabled = true; });
-            showToast('Memproses aksi...');
+            showToast('Processing action...');
 
             fetch(form.getAttribute('action') || window.location.href, {
                 method: 'POST',
@@ -467,9 +427,9 @@ $notifiedCount = count(array_filter($entries, static fn($e) => $e['status'] === 
                 return res.json();
             }).then(function (data) {
                 if (!data || !data.success) {
-                    throw new Error((data && data.message) ? data.message : 'Aksi gagal diproses.');
+                    throw new Error((data && data.message) ? data.message : 'Action failed to process.');
                 }
-                showToast(data.message || 'Aksi berhasil.');
+                showToast(data.message || 'Action completed successfully.');
                 if (data.redirect) {
                     setTimeout(function () { window.location.href = data.redirect; }, 420);
                 } else {
@@ -480,7 +440,7 @@ $notifiedCount = count(array_filter($entries, static fn($e) => $e['status'] === 
                     node.innerHTML = backup[i] || node.innerHTML;
                 });
                 buttons.forEach(function (btn) { btn.disabled = false; });
-                showToast(err.message || 'Terjadi kesalahan, perubahan dibatalkan.');
+                showToast(err.message || 'An error occurred, changes were rolled back.');
             });
         });
     });

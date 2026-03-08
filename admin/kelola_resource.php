@@ -68,9 +68,9 @@ include __DIR__ . '/../layouts/sidebar_admin.php';
             <a href="?tipe=Studio" class="rs-filter-chip <?= $filterTipe === 'Studio' ? 'active' : '' ?>">Studio</a>
             <a href="?tipe=Alat" class="rs-filter-chip <?= $filterTipe === 'Alat' ? 'active' : '' ?>">Equipment</a>
         </div>
-        <div class="input-group input-group-sm" style="max-width:260px">
-            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted" style="font-size:.8rem"></i></span>
-            <input type="text" id="resourceSearch" class="form-control border-start-0" placeholder="Search resource...">
+        <div class="input-group input-group-sm search-pill-group" style="max-width:320px">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input type="text" id="resourceSearch" class="form-control search-pill-input" placeholder="Search resource...">
         </div>
     </div>
 

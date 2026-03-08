@@ -6,7 +6,6 @@
 require_once __DIR__ . '/config/init.php';
 require_once __DIR__ . '/functions/user_helper.php';
 
-// Jika sudah login, redirect ke dashboard
 if (isLoggedIn()) {
     redirectByRole();
 }
@@ -14,7 +13,6 @@ if (isLoggedIn()) {
 $error = getFlash('error');
 $success = getFlash('success');
 
-// Proses login
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     requireCsrf();
 
@@ -22,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = $_POST['password'] ?? '';
 
     if (empty($username) || empty($password)) {
-        $error = 'Username dan password wajib diisi.';
+        $error = 'Username and password are required.';
     } else {
         $result = loginUser($pdo, $username, $password);
         if ($result['success']) {
@@ -36,11 +34,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $csrf = generateCsrfToken();
 ?>
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - <?= SITE_FULL_NAME ?></title>
+    <title>Sign In - <?= SITE_FULL_NAME ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -48,128 +46,203 @@ $csrf = generateCsrfToken();
         * { font-family: 'Plus Jakarta Sans', sans-serif; }
         body {
             min-height: 100vh;
-            background: linear-gradient(135deg, #B2D5E2 0%, #44A6B5 50%, #004554 100%);
+            margin: 0;
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: 1.2rem;
+            background:
+                radial-gradient(1200px 380px at 50% 110%, rgba(255,255,255,0.9), rgba(255,255,255,0.2) 50%, transparent 65%),
+                linear-gradient(180deg, #84cbd4 0%, #d8eff3 56%, #f4fafb 100%);
         }
-        .login-card {
-            width: 100%;
-            max-width: 440px;
-            border: none;
-            border-radius: 16px;
+        .auth-clouds {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
             overflow: hidden;
-            box-shadow: 0 20px 60px rgba(0, 69, 84, 0.35);
         }
-        .login-header {
-            background: linear-gradient(135deg, #004554 0%, #006d7a 100%);
-            color: #fff;
-            padding: 2rem 2rem 1.5rem;
+        .auth-clouds::before,
+        .auth-clouds::after {
+            content: '';
+            position: absolute;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.55);
+            filter: blur(2px);
+        }
+        .auth-clouds::before {
+            width: 360px;
+            height: 100px;
+            left: -40px;
+            bottom: 70px;
+        }
+        .auth-clouds::after {
+            width: 420px;
+            height: 120px;
+            right: -50px;
+            bottom: 55px;
+        }
+        .auth-wrap {
+            width: 100%;
+            max-width: 430px;
+            position: relative;
+            z-index: 1;
+        }
+        .auth-card {
+            border: 1px solid rgba(255,255,255,0.65);
+            border-radius: 22px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.82), rgba(255,255,255,0.7));
+            box-shadow: 0 22px 52px rgba(0, 69, 84, 0.18);
+            backdrop-filter: blur(8px);
+            overflow: hidden;
+        }
+        .auth-header {
+            padding: 1.4rem 1.4rem 0.7rem;
             text-align: center;
         }
-        .login-header .logo-icon {
-            display: inline-flex;
+        .auth-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 18px;
+            margin: 0 auto 0.75rem;
+            background: linear-gradient(145deg, rgba(255,255,255,0.95), rgba(233,241,246,0.92));
+            border: 1px solid rgba(0,69,84,0.08);
+            display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 0.75rem;
+            box-shadow: 0 10px 20px rgba(0, 69, 84, 0.1);
         }
-        .login-body { padding: 2rem; }
-        .form-control:focus {
+        .auth-icon img {
+            width: 42px;
+            height: 42px;
+            object-fit: contain;
+        }
+        .auth-title {
+            font-size: 1.55rem;
+            font-weight: 800;
+            color: #10212f;
+            margin-bottom: 0.25rem;
+        }
+        .auth-sub {
+            color: #60788c;
+            font-size: 0.86rem;
+            margin-bottom: 0;
+        }
+        .auth-body {
+            padding: 0.9rem 1.4rem 1.35rem;
+        }
+        .auth-label {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #40586a;
+            margin-bottom: 0.35rem;
+        }
+        .auth-control {
+            border: 1px solid #d8e4ec;
+            border-radius: 12px;
+            font-size: 0.86rem;
+            padding: 0.65rem 0.8rem;
+            background: rgba(255,255,255,0.9);
+        }
+        .auth-control:focus {
             border-color: #44A6B5;
-            box-shadow: 0 0 0 0.2rem rgba(68, 166, 181, 0.2);
+            box-shadow: 0 0 0 0.18rem rgba(68, 166, 181, 0.18);
         }
-        .btn-login {
-            padding: 0.75rem;
-            font-weight: 600;
-            font-size: 1rem;
-            background-color: #44A6B5;
-            border-color: #44A6B5;
+        .auth-login-btn {
+            margin-top: 0.55rem;
+            border: none;
+            border-radius: 12px;
+            padding: 0.7rem;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #fff;
+            background: linear-gradient(135deg, #004554 0%, #0a7484 52%, #44A6B5 100%);
+            box-shadow: 0 10px 20px rgba(0, 69, 84, 0.24);
         }
-        .btn-login:hover {
-            background-color: #004554;
-            border-color: #004554;
+        .auth-login-btn:hover {
+            color: #fff;
+            filter: brightness(1.05);
         }
-        a { color: #44A6B5; }
-        a:hover { color: #004554; }
+        .auth-foot {
+            text-align: center;
+            font-size: 0.8rem;
+            color: #5f7488;
+            margin-top: 0.95rem;
+        }
+        .auth-foot a {
+            color: #004554;
+            font-weight: 700;
+            text-decoration: none;
+        }
+        .auth-brand {
+            text-align: center;
+            margin-top: 0.7rem;
+            font-size: 0.76rem;
+            color: #5f7488;
+        }
+        .auth-brand strong {
+            color: #004554;
+        }
     </style>
 </head>
 <body>
-    <div class="card login-card">
-        <div class="login-header">
-            <div class="logo-icon">
-                <img src="<?= BASE_URL ?>/assets/pictures/Logo_TVRI.svg.png" alt="TVRI" width="72" height="72" style="width:72px;height:72px;object-fit:contain">
+    <div class="auth-clouds"></div>
+
+    <div class="auth-wrap">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="auth-icon"><img src="<?= BASE_URL ?>/assets/pictures/Logo_TVRI.svg.png" alt="TVRI logo"></div>
+                <h1 class="auth-title">Sign in</h1>
+                <p class="auth-sub">Access SITARU reservation workspace</p>
             </div>
-            <h4 class="fw-bold mb-1"><?= SITE_NAME ?></h4>
-            <p class="mb-0 opacity-75 small">Sistem Tata Ruang & Alat TVRI</p>
-        </div>
-        <div class="login-body">
-            <?php if ($error): ?>
-                <div class="alert alert-danger alert-dismissible fade show py-2" role="alert">
-                    <i class="bi bi-exclamation-triangle me-1"></i><?= htmlspecialchars($error) ?>
-                    <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="alert"></button>
-                </div>
-            <?php endif; ?>
 
-            <?php if ($success): ?>
-                <div class="alert alert-success alert-dismissible fade show py-2" role="alert">
-                    <i class="bi bi-check-circle me-1"></i><?= htmlspecialchars($success) ?>
-                    <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="alert"></button>
-                </div>
-            <?php endif; ?>
+            <div class="auth-body">
+                <?php if ($error): ?>
+                    <div class="alert alert-danger py-2 small mb-3"><?= htmlspecialchars($error) ?></div>
+                <?php endif; ?>
+                <?php if ($success): ?>
+                    <div class="alert alert-success py-2 small mb-3"><?= htmlspecialchars($success) ?></div>
+                <?php endif; ?>
 
-            <form method="POST" action="" autocomplete="off">
-                <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
+                <form method="POST" action="" autocomplete="off">
+                    <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
 
-                <div class="mb-3">
-                    <label for="username" class="form-label fw-medium">Username</label>
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="bi bi-person"></i></span>
-                        <input type="text" class="form-control" id="username" name="username"
-                               placeholder="Masukkan username" required
-                               value="<?= htmlspecialchars($_POST['username'] ?? '') ?>">
+                    <div class="mb-2">
+                        <label for="username" class="auth-label">Username</label>
+                        <input type="text" class="form-control auth-control" id="username" name="username" placeholder="Enter username" required value="<?= htmlspecialchars($_POST['username'] ?? '') ?>">
                     </div>
-                </div>
 
-                <div class="mb-3">
-                    <label for="password" class="form-label fw-medium">Password</label>
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                        <input type="password" class="form-control" id="password" name="password"
-                               placeholder="Masukkan password" required>
-                        <button class="btn btn-outline-secondary" type="button" id="togglePassword">
-                            <i class="bi bi-eye"></i>
-                        </button>
+                    <div class="mb-1">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <label for="password" class="auth-label">Password</label>
+                            <a href="#" class="small text-decoration-none" style="color:#60788c" data-bs-toggle="modal" data-bs-target="#lupaPasswordModal">Forgot password?</a>
+                        </div>
+                        <div class="input-group">
+                            <input type="password" class="form-control auth-control" id="password" name="password" placeholder="Enter password" required>
+                            <button class="btn btn-outline-secondary" type="button" id="togglePassword" style="border-radius:12px;border-color:#d8e4ec;margin-left:0.35rem">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
                     </div>
-                </div>
 
-                <button type="submit" class="btn btn-primary btn-login w-100 mb-3">
-                    <i class="bi bi-box-arrow-in-right me-1"></i>Masuk
-                </button>
+                    <button type="submit" class="btn auth-login-btn w-100">
+                        Get Started
+                    </button>
 
-                <div class="text-center">
-                    <small class="text-muted">Belum punya akun?
-                        <a href="<?= BASE_URL ?>/register.php" class="text-decoration-none fw-medium">Daftar di sini</a>
-                    </small>
-                </div>
-                <div class="text-center mt-2">
-                    <small><a href="#" class="text-muted text-decoration-none" data-bs-toggle="modal" data-bs-target="#lupaPasswordModal">
-                        <i class="bi bi-question-circle me-1"></i>Lupa Password?
-                    </a></small>
-                </div>
-            </form>
-
-            <hr class="my-3">
-            <div class="text-center">
-                <small class="text-muted">Demo: admin / password</small>
+                    <div class="auth-foot">
+                        Don't have an account? <a href="<?= BASE_URL ?>/register.php">Register here</a>
+                    </div>
+                    <div class="auth-brand">Powered by <strong><?= SITE_NAME ?></strong></div>
+                </form>
             </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        document.getElementById('togglePassword').addEventListener('click', function() {
-            const pwd = document.getElementById('password');
-            const icon = this.querySelector('i');
+        document.getElementById('togglePassword').addEventListener('click', function () {
+            var pwd = document.getElementById('password');
+            var icon = this.querySelector('i');
             if (pwd.type === 'password') {
                 pwd.type = 'text';
                 icon.classList.replace('bi-eye', 'bi-eye-slash');
@@ -179,25 +252,20 @@ $csrf = generateCsrfToken();
             }
         });
     </script>
-    <!-- Lupa Password Modal -->
+
     <div class="modal fade" id="lupaPasswordModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-sm">
-            <div class="modal-content">
+            <div class="modal-content border-0" style="border-radius:14px">
                 <div class="modal-body text-center py-4 px-4">
-                    <div style="width:52px;height:52px;background:rgba(68,166,181,0.12);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem">
-                        <i class="bi bi-key" style="font-size:1.4rem;color:#44A6B5"></i>
+                    <div style="width:48px;height:48px;background:rgba(68,166,181,0.14);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 0.75rem">
+                        <i class="bi bi-key" style="font-size:1.15rem;color:#004554"></i>
                     </div>
-                    <h6 class="fw-bold mb-2">Lupa Password?</h6>
-                    <p class="text-muted small mb-3">Hubungi administrator sistem SITARU untuk mereset password akun Anda.</p>
-                    <div style="background:rgba(68,166,181,0.08);border:1px solid rgba(68,166,181,0.2);border-radius:8px;padding:0.6rem 0.85rem;font-size:0.8rem;text-align:left;margin-bottom:1rem">
-                        <i class="bi bi-info-circle me-1" style="color:#44A6B5"></i>
-                        Informasikan <strong>username</strong> Anda kepada admin.
-                    </div>
-                    <button type="button" class="btn btn-sm btn-outline-secondary w-100" data-bs-dismiss="modal">Mengerti</button>
+                    <h6 class="fw-bold mb-2">Forgot Password?</h6>
+                    <p class="text-muted small mb-3">Please contact the SITARU administrator to reset your password.</p>
+                    <button type="button" class="btn btn-sm btn-outline-secondary w-100" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
     </div>
-
 </body>
 </html>
