@@ -863,53 +863,55 @@ body {
     flex-shrink: 0;
 }
 
-/* ---- Soft Pill Status Badge ---- */
-/* Used everywhere a reservation status is shown */
+/* ---- Status Badge — Reference-Image Style ---- */
+/* Sharp pill, uppercase, bold — matches label-tag design system */
 .res-badge {
     display: inline-flex;
     align-items: center;
-    gap: 0.35em;
-    font-size: 0.78rem;
-    font-weight: 600;
+    gap: 0.32em;
+    font-size: 0.7rem;
+    font-weight: 700;
     line-height: 1;
-    padding: 0.38em 0.85em;
-    border-radius: 50px;
+    padding: 0.32em 0.75em;
+    border-radius: 6px;
     white-space: nowrap;
-    letter-spacing: 0.01em;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border: 1.5px solid transparent;
 }
 .res-badge .res-badge-icon {
-    font-size: 0.82em;
+    font-size: 0.8em;
     flex-shrink: 0;
 }
-/* Pending — amber */
+/* Pending — amber outlined (like IN PROGRESS in ref) */
 .res-badge.rb-pending {
-    background: #fff7ed;
-    color: #c2610c;
-    border: 1px solid #fed7aa;
+    background: #fffbeb;
+    color: #b45309;
+    border-color: #fcd34d;
 }
-/* Approved — green */
+/* Approved — solid green fill (like CONNECTED / DONE in ref) */
 .res-badge.rb-approved {
-    background: #f0fdf4;
-    color: #166534;
-    border: 1px solid #bbf7d0;
+    background: #16a34a;
+    color: #ffffff;
+    border-color: #16a34a;
 }
-/* Rejected — red */
+/* Rejected — solid red fill (like DELETED / ERROR in ref) */
 .res-badge.rb-rejected {
-    background: #fef2f2;
-    color: #b91c1c;
-    border: 1px solid #fecaca;
+    background: #dc2626;
+    color: #ffffff;
+    border-color: #dc2626;
 }
-/* Cancelled — grey */
+/* Cancelled — neutral dark outlined (like DRAFT / NO ACTION in ref) */
 .res-badge.rb-cancelled {
     background: #f9fafb;
-    color: #4b5563;
-    border: 1px solid #e5e7eb;
+    color: #374151;
+    border-color: #9ca3af;
 }
-/* Finished / Selesai — blue */
+/* Finished / Selesai — solid teal-blue fill (like CLOSED in ref) */
 .res-badge.rb-finished {
-    background: #eff6ff;
-    color: #1d4ed8;
-    border: 1px solid #bfdbfe;
+    background: #0891b2;
+    color: #ffffff;
+    border-color: #0891b2;
 }
 
 /* Status text (colored, no background) — riwayat table */

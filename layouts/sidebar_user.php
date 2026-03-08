@@ -33,11 +33,6 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                         <i class="bi bi-clock-history me-2"></i>Riwayat Reservasi
                     </a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link <?= $currentPage === 'calendar.php' ? 'active' : '' ?>" href="<?= BASE_URL ?>/user/calendar.php">
-                        <i class="bi bi-calendar3 me-2"></i>Kalender
-                    </a>
-                </li>
             </ul>
         </div>
 
@@ -83,11 +78,6 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             <li class="nav-item">
                 <a class="nav-link <?= $currentPage === 'riwayat.php' ? 'active' : '' ?>" href="<?= BASE_URL ?>/user/riwayat.php">
                     <i class="bi bi-clock-history me-2"></i>Riwayat Reservasi
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link <?= $currentPage === 'calendar.php' ? 'active' : '' ?>" href="<?= BASE_URL ?>/user/calendar.php">
-                    <i class="bi bi-calendar3 me-2"></i>Kalender
                 </a>
             </li>
         </ul>
