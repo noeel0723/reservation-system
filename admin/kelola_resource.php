@@ -77,10 +77,17 @@ include __DIR__ . '/../layouts/sidebar_admin.php';
                 <div class="card-body pb-2">
                     <!-- Header row -->
                     <div class="d-flex align-items-start gap-3 mb-3">
+                        <?php if (!empty($res['foto'])): ?>
+                        <div class="flex-shrink-0 rounded-2 overflow-hidden" style="width:46px;height:46px">
+                            <img src="<?= BASE_URL ?>/<?= htmlspecialchars($res['foto']) ?>" alt="<?= htmlspecialchars($res['nama']) ?>"
+                                 style="width:100%;height:100%;object-fit:cover">
+                        </div>
+                        <?php else: ?>
                         <div class="flex-shrink-0 d-flex align-items-center justify-content-center fw-bold text-white rounded-2"
                              style="width:46px;height:46px;background:<?= $color ?>;font-size:0.9rem;letter-spacing:0.5px">
                             <?= $initials ?>
                         </div>
+                        <?php endif; ?>
                         <div class="flex-grow-1 min-w-0">
                             <div class="d-flex align-items-center gap-2 flex-wrap">
                                 <h6 class="fw-bold mb-0 text-truncate"><?= htmlspecialchars($res['nama']) ?></h6>
@@ -164,9 +171,9 @@ document.getElementById('resourceSearch').addEventListener('input', function() {
 <!-- Add / Edit Modal -->
 <div class="modal fade <?= $editData ? 'show' : '' ?>" id="resourceModal" tabindex="-1"
      <?= $editData ? 'style="display:block;background:rgba(0,0,0,0.5);"' : '' ?>>
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <form method="POST" action="<?= BASE_URL ?>/admin/proses_resource.php">
+            <form method="POST" action="<?= BASE_URL ?>/admin/proses_resource.php" enctype="multipart/form-data">
                 <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
                 <input type="hidden" name="action" value="<?= $editData ? 'update' : 'create' ?>">
                 <?php if ($editData): ?>
@@ -181,41 +188,73 @@ document.getElementById('resourceSearch').addEventListener('input', function() {
                     <a href="<?= BASE_URL ?>/admin/kelola_resource.php" class="btn-close"></a>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label fw-medium">Nama <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" name="nama" required
-                               value="<?= htmlspecialchars($editData['nama'] ?? '') ?>">
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-medium">Tipe <span class="text-danger">*</span></label>
-                            <select name="tipe" class="form-select" required>
-                                <option value="Studio" <?= ($editData['tipe'] ?? '') === 'Studio' ? 'selected' : '' ?>>Studio</option>
-                                <option value="Alat" <?= ($editData['tipe'] ?? '') === 'Alat' ? 'selected' : '' ?>>Alat</option>
-                            </select>
+                    <div class="row g-3">
+                        <!-- Kiri -->
+                        <div class="col-12 col-md-8">
+                            <div class="mb-3">
+                                <label class="form-label fw-medium">Nama <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="nama" required
+                                       value="<?= htmlspecialchars($editData['nama'] ?? '') ?>">
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label class="form-label fw-medium">Tipe <span class="text-danger">*</span></label>
+                                    <select name="tipe" class="form-select" required>
+                                        <option value="Studio" <?= ($editData['tipe'] ?? '') === 'Studio' ? 'selected' : '' ?>>Studio</option>
+                                        <option value="Alat"   <?= ($editData['tipe'] ?? '') === 'Alat'   ? 'selected' : '' ?>>Alat</option>
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label fw-medium">Kapasitas</label>
+                                    <input type="number" class="form-control" name="kapasitas" min="0"
+                                           value="<?= htmlspecialchars($editData['kapasitas'] ?? '') ?>"
+                                           placeholder="Untuk studio">
+                                </div>
+                            </div>
+                            <div class="mb-3 mt-3">
+                                <label class="form-label fw-medium">Lokasi</label>
+                                <input type="text" class="form-control" name="lokasi"
+                                       value="<?= htmlspecialchars($editData['lokasi'] ?? '') ?>">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-medium">Deskripsi</label>
+                                <textarea class="form-control" name="deskripsi" rows="2"><?= htmlspecialchars($editData['deskripsi'] ?? '') ?></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-medium">Spesifikasi Teknis</label>
+                                <textarea class="form-control" name="spesifikasi" rows="3"
+                                          placeholder="Contoh: Resolusi 4K, bitrate 200 Mbps, format MXF..."><?= htmlspecialchars($editData['spesifikasi'] ?? '') ?></textarea>
+                                <div class="form-text">Detail teknis yang ditampilkan ke user saat memilih resource.</div>
+                            </div>
+                            <div class="mb-0">
+                                <label class="form-label fw-medium">Status Ketersediaan</label>
+                                <select name="is_available" class="form-select">
+                                    <option value="1" <?= ($editData['is_available'] ?? 1) == 1 ? 'selected' : '' ?>>Tersedia</option>
+                                    <option value="0" <?= ($editData['is_available'] ?? 1) == 0 ? 'selected' : '' ?>>Maintenance</option>
+                                </select>
+                            </div>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-medium">Kapasitas</label>
-                            <input type="number" class="form-control" name="kapasitas" min="0"
-                                   value="<?= htmlspecialchars($editData['kapasitas'] ?? '') ?>"
-                                   placeholder="Untuk studio">
+
+                        <!-- Kanan: Foto -->
+                        <div class="col-12 col-md-4">
+                            <label class="form-label fw-medium">Foto Resource</label>
+                            <?php if (!empty($editData['foto'])): ?>
+                            <div class="mb-2">
+                                <img src="<?= BASE_URL ?>/<?= htmlspecialchars($editData['foto']) ?>"
+                                     alt="Foto" class="img-fluid rounded-2" style="max-height:150px;width:100%;object-fit:cover">
+                                <div class="form-text">Foto saat ini. Upload baru untuk mengganti.</div>
+                            </div>
+                            <?php endif; ?>
+                            <div class="upload-area border rounded-2 d-flex flex-column align-items-center justify-content-center p-3"
+                                 style="border-style:dashed!important;border-color:#d1d5db!important;cursor:pointer;min-height:120px;background:#fafbfc"
+                                 onclick="document.getElementById('fotoInput').click()">
+                                <i class="bi bi-cloud-upload mb-2" style="font-size:1.5rem;color:#9ca3af"></i>
+                                <span class="text-muted" style="font-size:0.78rem" id="fotoLabel">Klik untuk pilih foto</span>
+                                <span class="text-muted" style="font-size:0.7rem">JPG, PNG, WebP · Maks 2 MB</span>
+                            </div>
+                            <input type="file" id="fotoInput" name="foto" accept="image/*" class="d-none"
+                                   onchange="document.getElementById('fotoLabel').textContent = this.files[0]?.name || 'Klik untuk pilih foto'">
                         </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-medium">Lokasi</label>
-                        <input type="text" class="form-control" name="lokasi"
-                               value="<?= htmlspecialchars($editData['lokasi'] ?? '') ?>">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-medium">Deskripsi</label>
-                        <textarea class="form-control" name="deskripsi" rows="3"><?= htmlspecialchars($editData['deskripsi'] ?? '') ?></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-medium">Status Ketersediaan</label>
-                        <select name="is_available" class="form-select">
-                            <option value="1" <?= ($editData['is_available'] ?? 1) == 1 ? 'selected' : '' ?>>Tersedia</option>
-                            <option value="0" <?= ($editData['is_available'] ?? 1) == 0 ? 'selected' : '' ?>>Maintenance</option>
-                        </select>
                     </div>
                 </div>
                 <div class="modal-footer">

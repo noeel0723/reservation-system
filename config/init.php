@@ -14,6 +14,7 @@ ini_set('display_errors', '1');
 // Load dependencies
 require_once __DIR__ . '/koneksi.php';
 require_once __DIR__ . '/auth.php';
+require_once __DIR__ . '/../functions/log_helper.php';
 
 // Start secure session
 startSecureSession();

@@ -53,12 +53,22 @@ switch ($action) {
         }
 
         if ($result['success']) {
+            logActivity($pdo, 'create', 'reservation', (int)($result['id'] ?? 0),
+                "User #$userId mengajukan reservasi baru (resource #{$data['resource_id']}).");
             setFlash('success', $result['message']);
             header('Location: ' . BASE_URL . '/user/riwayat.php');
         } else {
             setFlash('error', $result['message']);
             if (!empty($result['conflicts'])) {
                 $_SESSION['reservation_conflicts'] = $result['conflicts'];
+                // Save form data so waitlist form can pre-fill
+                $_SESSION['waitlist_candidate'] = [
+                    'resource_id'   => $data['resource_id'],
+                    'keperluan'     => $data['keperluan'],
+                    'keterangan'    => $data['keterangan'],
+                    'waktu_mulai'   => $_POST['waktu_mulai'],
+                    'waktu_selesai' => $_POST['waktu_selesai'],
+                ];
             }
             $_SESSION['form_data'] = [
                 'resource_id'   => $data['resource_id'],
@@ -73,9 +83,103 @@ switch ($action) {
 
     case 'cancel':
         $reservationId = (int)($_POST['reservation_id'] ?? 0);
+        // Fetch resource info before cancelling (for waitlist check)
+        $resRow = $pdo->prepare("SELECT resource_id, waktu_mulai, waktu_selesai FROM reservations WHERE id = :id AND user_id = :uid");
+        $resRow->execute([':id' => $reservationId, ':uid' => $userId]);
+        $resData = $resRow->fetch();
+
         $result = cancelReservation($pdo, $reservationId, $userId);
+        if ($result['success']) {
+            logActivity($pdo, 'cancel', 'reservation', $reservationId,
+                "User #$userId membatalkan reservasi #$reservationId.");
+            // Notify waitlist
+            if ($resData) {
+                checkAndNotifyWaitlist($pdo, (int)$resData['resource_id'],
+                    $resData['waktu_mulai'], $resData['waktu_selesai']);
+            }
+        }
         setFlash($result['success'] ? 'success' : 'error', $result['message']);
         header('Location: ' . BASE_URL . '/user/riwayat.php');
+        exit;
+
+    // ---- Feature 10: Waitlist actions ----
+    case 'join_waitlist':
+        $resourceId   = (int)($_POST['resource_id']   ?? 0);
+        $keperluan    = trim($_POST['keperluan']    ?? '');
+        $keterangan   = trim($_POST['keterangan']   ?? '');
+        $waktuMulai   = trim($_POST['waktu_mulai']   ?? '');
+        $waktuSelesai = trim($_POST['waktu_selesai'] ?? '');
+
+        if ($resourceId <= 0 || empty($keperluan) || empty($waktuMulai) || empty($waktuSelesai)) {
+            setFlash('error', 'Data antrian tidak lengkap.');
+            header('Location: ' . BASE_URL . '/user/reservasi_baru.php');
+            exit;
+        }
+
+        $waktuMulai   = date('Y-m-d H:i:s', strtotime($waktuMulai));
+        $waktuSelesai = date('Y-m-d H:i:s', strtotime($waktuSelesai));
+
+        $stmt = $pdo->prepare(
+            "INSERT INTO waitlist (user_id, resource_id, keperluan, keterangan, waktu_mulai, waktu_selesai)
+             VALUES (:uid, :rid, :kep, :ket, :wm, :ws)"
+        );
+        $stmt->execute([
+            ':uid' => $userId,     ':rid' => $resourceId,
+            ':kep' => $keperluan,  ':ket' => $keterangan ?: null,
+            ':wm'  => $waktuMulai, ':ws'  => $waktuSelesai,
+        ]);
+        $wid = (int)$pdo->lastInsertId();
+        logActivity($pdo, 'create', 'waitlist', $wid,
+            "User #$userId mendaftar antrian untuk resource #$resourceId.");
+        unset($_SESSION['waitlist_candidate'], $_SESSION['reservation_conflicts']);
+        setFlash('success', 'Anda telah terdaftar dalam antrian. Kami akan memberi tahu jika slot tersedia.');
+        header('Location: ' . BASE_URL . '/user/waitlist.php');
+        exit;
+
+    case 'cancel_waitlist':
+        $wid = (int)($_POST['waitlist_id'] ?? 0);
+        if ($wid <= 0) { setFlash('error', 'ID antrian tidak valid.'); header('Location: ' . BASE_URL . '/user/waitlist.php'); exit; }
+        // Security: only allow cancelling own entry
+        $own = $pdo->prepare("SELECT id FROM waitlist WHERE id = :id AND user_id = :uid");
+        $own->execute([':id' => $wid, ':uid' => $userId]);
+        if (!$own->fetch()) { setFlash('error', 'Antrian tidak ditemukan.'); header('Location: ' . BASE_URL . '/user/waitlist.php'); exit; }
+
+        $pdo->prepare("UPDATE waitlist SET status = 'Cancelled' WHERE id = :id")->execute([':id' => $wid]);
+        logActivity($pdo, 'cancel', 'waitlist', $wid, "User #$userId membatalkan antrian #$wid.");
+        setFlash('success', 'Antrian berhasil dibatalkan.');
+        header('Location: ' . BASE_URL . '/user/waitlist.php');
+        exit;
+
+    case 'convert_waitlist':
+        $wid = (int)($_POST['waitlist_id'] ?? 0);
+        if ($wid <= 0) { setFlash('error', 'ID antrian tidak valid.'); header('Location: ' . BASE_URL . '/user/waitlist.php'); exit; }
+
+        $entry = $pdo->prepare(
+            "SELECT * FROM waitlist WHERE id = :id AND user_id = :uid AND status = 'Notified'"
+        );
+        $entry->execute([':id' => $wid, ':uid' => $userId]);
+        $w = $entry->fetch();
+        if (!$w) { setFlash('error', 'Antrian tidak ditemukan atau belum siap dikonversi.'); header('Location: ' . BASE_URL . '/user/waitlist.php'); exit; }
+
+        $data = [
+            'user_id'       => $userId,
+            'resource_id'   => $w['resource_id'],
+            'keperluan'     => $w['keperluan'],
+            'keterangan'    => $w['keterangan'],
+            'waktu_mulai'   => $w['waktu_mulai'],
+            'waktu_selesai' => $w['waktu_selesai'],
+        ];
+        $result = createReservation($pdo, $data);
+        if ($result['success']) {
+            $pdo->prepare("UPDATE waitlist SET status = 'Converted' WHERE id = :id")->execute([':id' => $wid]);
+            logActivity($pdo, 'create', 'reservation', (int)($result['id'] ?? 0),
+                "User #$userId mengonversi antrian #$wid menjadi reservasi.");
+            setFlash('success', 'Reservasi berhasil dibuat dari antrian!');
+            header('Location: ' . BASE_URL . '/user/riwayat.php');
+        } else {
+            setFlash('error', $result['message']);
+            header('Location: ' . BASE_URL . '/user/waitlist.php');
+        }
         exit;
 
     default:

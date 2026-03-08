@@ -33,6 +33,18 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                         <i class="bi bi-clock-history me-2"></i>Riwayat Reservasi
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link <?= $currentPage === 'waitlist.php' ? 'active' : '' ?>" href="<?= BASE_URL ?>/user/waitlist.php">
+                        <i class="bi bi-list-ol me-2"></i>Antrian Saya
+                        <?php
+                        $myWait = $pdo->prepare("SELECT COUNT(*) FROM waitlist WHERE user_id = :uid AND status = 'Notified'");
+                        $myWait->execute([':uid' => $_SESSION['user_id']]);
+                        $myWaitCount = (int)$myWait->fetchColumn();
+                        if ($myWaitCount > 0): ?>
+                            <span class="badge bg-success ms-auto" style="font-size:0.65rem"><?= $myWaitCount ?></span>
+                        <?php endif; ?>
+                    </a>
+                </li>
             </ul>
         </div>
 
@@ -78,6 +90,11 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             <li class="nav-item">
                 <a class="nav-link <?= $currentPage === 'riwayat.php' ? 'active' : '' ?>" href="<?= BASE_URL ?>/user/riwayat.php">
                     <i class="bi bi-clock-history me-2"></i>Riwayat Reservasi
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link <?= $currentPage === 'waitlist.php' ? 'active' : '' ?>" href="<?= BASE_URL ?>/user/waitlist.php">
+                    <i class="bi bi-list-ol me-2"></i>Antrian Saya
                 </a>
             </li>
         </ul>

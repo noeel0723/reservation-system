@@ -42,17 +42,18 @@ function getResourceById(PDO $pdo, int $id): ?array
  */
 function createResource(PDO $pdo, array $data): array
 {
-    $sql = "INSERT INTO resources (nama, tipe, deskripsi, lokasi, kapasitas, foto, is_available)
-            VALUES (:nama, :tipe, :deskripsi, :lokasi, :kapasitas, :foto, :is_available)";
+    $sql = "INSERT INTO resources (nama, tipe, deskripsi, lokasi, kapasitas, spesifikasi, foto, is_available)
+            VALUES (:nama, :tipe, :deskripsi, :lokasi, :kapasitas, :spesifikasi, :foto, :is_available)";
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute([
         ':nama'         => $data['nama'],
         ':tipe'         => $data['tipe'],
-        ':deskripsi'    => $data['deskripsi'] ?? null,
-        ':lokasi'       => $data['lokasi'] ?? null,
-        ':kapasitas'    => $data['kapasitas'] ?? null,
-        ':foto'         => $data['foto'] ?? null,
+        ':deskripsi'    => $data['deskripsi']   ?? null,
+        ':lokasi'       => $data['lokasi']      ?? null,
+        ':kapasitas'    => $data['kapasitas']   ?? null,
+        ':spesifikasi'  => $data['spesifikasi'] ?? null,
+        ':foto'         => $data['foto']        ?? null,
         ':is_available' => $data['is_available'] ?? 1,
     ]);
 
@@ -64,37 +65,26 @@ function createResource(PDO $pdo, array $data): array
  */
 function updateResource(PDO $pdo, int $id, array $data): array
 {
-    $sql = "UPDATE resources SET
-                nama = :nama,
-                tipe = :tipe,
-                deskripsi = :deskripsi,
-                lokasi = :lokasi,
-                kapasitas = :kapasitas,
-                is_available = :is_available
-            WHERE id = :id";
-
     $params = [
-        ':nama'         => $data['nama'],
-        ':tipe'         => $data['tipe'],
-        ':deskripsi'    => $data['deskripsi'] ?? null,
-        ':lokasi'       => $data['lokasi'] ?? null,
-        ':kapasitas'    => $data['kapasitas'] ?? null,
-        ':is_available' => $data['is_available'] ?? 1,
-        ':id'           => $id,
+        ':nama'          => $data['nama'],
+        ':tipe'          => $data['tipe'],
+        ':deskripsi'     => $data['deskripsi']    ?? null,
+        ':lokasi'        => $data['lokasi']       ?? null,
+        ':kapasitas'     => $data['kapasitas']    ?? null,
+        ':spesifikasi'   => $data['spesifikasi']  ?? null,
+        ':is_available'  => $data['is_available'] ?? 1,
+        ':id'            => $id,
     ];
 
-    if (!empty($data['foto'])) {
-        $sql = "UPDATE resources SET
-                    nama = :nama,
-                    tipe = :tipe,
-                    deskripsi = :deskripsi,
-                    lokasi = :lokasi,
-                    kapasitas = :kapasitas,
-                    foto = :foto,
-                    is_available = :is_available
-                WHERE id = :id";
-        $params[':foto'] = $data['foto'];
-    }
+    $fotoClause = !empty($data['foto']) ? ', foto = :foto' : '';
+    if (!empty($data['foto'])) { $params[':foto'] = $data['foto']; }
+
+    $sql = "UPDATE resources SET
+                nama = :nama, tipe = :tipe, deskripsi = :deskripsi,
+                lokasi = :lokasi, kapasitas = :kapasitas,
+                spesifikasi = :spesifikasi {$fotoClause},
+                is_available = :is_available
+            WHERE id = :id";
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);

@@ -31,13 +31,43 @@ include __DIR__ . '/../layouts/sidebar_user.php';
 
 <?php
 $conflicts = $_SESSION['reservation_conflicts'] ?? null;
+$waitlistCandidate = $_SESSION['waitlist_candidate'] ?? null;
 if ($conflicts) {
     unset($_SESSION['reservation_conflicts']);
-    echo '<div class="alert alert-warning"><strong><i class="bi bi-exclamation-triangle me-1"></i>Jadwal Bentrok!</strong><ul class="mb-0 mt-2">';
+    echo '<div class="alert alert-warning border-0 shadow-sm"><strong><i class="bi bi-exclamation-triangle me-1"></i>Jadwal Bentrok!</strong><ul class="mb-0 mt-2">';
     foreach ($conflicts as $c) {
         echo '<li>' . htmlspecialchars($c) . '</li>';
     }
     echo '</ul></div>';
+}
+if ($waitlistCandidate) {
+    unset($_SESSION['waitlist_candidate']);
+?>
+<div class="alert border-0 shadow-sm" style="background:#eff6ff;border-left:4px solid #3b82f6!important;border-left-style:solid!important">
+    <div class="d-flex align-items-start gap-3">
+        <i class="bi bi-hourglass-split mt-1 flex-shrink-0" style="color:#3b82f6;font-size:1.1rem"></i>
+        <div class="flex-grow-1">
+            <div class="fw-bold mb-1" style="color:#1d4ed8">Ingin Masuk Antrian?</div>
+            <p class="mb-3 small text-muted">Slot yang Anda inginkan sedang terisi. Daftarkan diri ke antrian &mdash; Anda akan diberitahu saat slot tersedia.</p>
+            <form method="POST" action="<?= BASE_URL ?>/user/proses_reservasi.php" class="d-flex flex-wrap gap-2 align-items-center">
+                <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
+                <input type="hidden" name="action" value="join_waitlist">
+                <input type="hidden" name="resource_id" value="<?= htmlspecialchars($waitlistCandidate['resource_id']) ?>">
+                <input type="hidden" name="waktu_mulai" value="<?= htmlspecialchars($waitlistCandidate['waktu_mulai']) ?>">
+                <input type="hidden" name="waktu_selesai" value="<?= htmlspecialchars($waitlistCandidate['waktu_selesai']) ?>">
+                <input type="hidden" name="keperluan" value="<?= htmlspecialchars($waitlistCandidate['keperluan']) ?>">
+                <input type="hidden" name="keterangan" value="<?= htmlspecialchars($waitlistCandidate['keterangan'] ?? '') ?>">
+                <div class="rounded-2 px-3 py-2 small" style="background:#dbeafe;color:#1e40af">
+                    <i class="bi bi-clock me-1"></i><?= date('d M Y H:i', strtotime($waitlistCandidate['waktu_mulai'])) ?> &ndash; <?= date('H:i', strtotime($waitlistCandidate['waktu_selesai'])) ?>
+                </div>
+                <button type="submit" class="btn btn-sm btn-primary px-3">
+                    <i class="bi bi-list-ol me-1"></i>Masuk Antrian
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+<?php
 }
 ?>
 
@@ -139,6 +169,10 @@ if ($conflicts) {
                                            data-name="<?= htmlspecialchars($s['nama']) ?>"
                                            data-tipe="Studio"
                                            data-lokasi="<?= htmlspecialchars($s['lokasi'] ?? '') ?>"
+                                           data-foto="<?= htmlspecialchars($s['foto'] ?? '') ?>"
+                                           data-deskripsi="<?= htmlspecialchars($s['deskripsi'] ?? '') ?>"
+                                           data-kapasitas="<?= htmlspecialchars($s['kapasitas'] ?? '') ?>"
+                                           data-spesifikasi="<?= htmlspecialchars($s['spesifikasi'] ?? '') ?>"
                                            required <?= $isChecked ? 'checked' : '' ?>>
                                     <div class="d-flex align-items-start gap-3">
                                         <div class="config-card-icon">
@@ -175,6 +209,10 @@ if ($conflicts) {
                                            data-name="<?= htmlspecialchars($a['nama']) ?>"
                                            data-tipe="Alat"
                                            data-lokasi="<?= htmlspecialchars($a['lokasi'] ?? '') ?>"
+                                           data-foto="<?= htmlspecialchars($a['foto'] ?? '') ?>"
+                                           data-deskripsi="<?= htmlspecialchars($a['deskripsi'] ?? '') ?>"
+                                           data-kapasitas="<?= htmlspecialchars($a['kapasitas'] ?? '') ?>"
+                                           data-spesifikasi="<?= htmlspecialchars($a['spesifikasi'] ?? '') ?>"
                                            required <?= $isChecked ? 'checked' : '' ?>>
                                     <div class="d-flex align-items-start gap-3">
                                         <div class="config-card-icon">
@@ -196,6 +234,35 @@ if ($conflicts) {
                         </div>
                     </div>
                     <?php endif; ?>
+
+                    <!-- Resource Detail Panel -->
+                    <div id="resourceDetail" class="d-none mt-4 rounded-3 overflow-hidden" style="border:1.5px solid #e0e5ea">
+                        <div class="d-flex align-items-center gap-3 px-4 py-3" style="background:#f9fafb;border-bottom:1px solid #e0e5ea">
+                            <div id="resDetailThumb" class="flex-shrink-0 rounded-2 overflow-hidden d-flex align-items-center justify-content-center"
+                                 style="width:52px;height:52px;background:#e0e5ea">
+                                <i class="bi bi-camera-reels" id="resDetailIcon" style="font-size:1.4rem;color:#9ca3af"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold" id="resDetailName" style="font-size:0.95rem"></div>
+                                <div class="d-flex align-items-center gap-3 mt-1" style="font-size:0.78rem;color:#6b7280">
+                                    <span id="resDetailTipe"></span>
+                                    <span id="resDetailLokasi" class="d-none"><i class="bi bi-geo-alt me-1"></i><span></span></span>
+                                    <span id="resDetailKapasitas" class="d-none"><i class="bi bi-people me-1"></i><span></span> orang</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="px-4 py-3">
+                            <div id="resDetailDeskripsi" class="d-none mb-3">
+                                <p class="small text-muted mb-0" id="resDetailDeskripsiText"></p>
+                            </div>
+                            <div id="resDetailSpesifikasi" class="d-none">
+                                <p class="fw-semibold mb-1" style="font-size:0.78rem;color:#374151;text-transform:uppercase;letter-spacing:0.05em">Spesifikasi Teknis</p>
+                                <p class="small text-muted mb-0" style="white-space:pre-wrap" id="resDetailSpesText"></p>
+                            </div>
+                            <div id="resDetailEmpty" class="text-muted small">Tidak ada informasi tambahan.</div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
 
@@ -425,14 +492,61 @@ var BASE_URL = '<?= BASE_URL ?>';
     btnPrev.addEventListener('click', function() { if (currentStep > 1) goToStep(currentStep - 1); });
     btnCancel.addEventListener('click', function() { goToStep(1); });
 
-    // Resource card selection
+    // Resource card selection + detail panel
     document.querySelectorAll('.config-card input[type="radio"]').forEach(function(radio) {
         radio.addEventListener('change', function() {
             document.querySelectorAll('.config-card').forEach(function(c) { c.classList.remove('selected'); });
             this.closest('.config-card').classList.add('selected');
             // Reset availability when resource changes
-            var section = document.getElementById('availabilitySection');
-            if (section) section.classList.add('d-none');
+            var avSection = document.getElementById('availabilitySection');
+            if (avSection) avSection.classList.add('d-none');
+            // Populate resource detail panel
+            var detail = document.getElementById('resourceDetail');
+            if (!detail) return;
+            var d = this.dataset;
+            document.getElementById('resDetailName').textContent = d.name || '';
+            document.getElementById('resDetailTipe').textContent = d.tipe || '';
+            var iconEl = document.getElementById('resDetailIcon');
+            if (iconEl) iconEl.className = 'bi bi-' + (d.tipe === 'Studio' ? 'camera-reels' : 'camera-video') + ' ' + iconEl.className.replace(/bi-\S+/g,'');
+            // Thumbnail
+            var thumb = document.getElementById('resDetailThumb');
+            if (thumb) {
+                if (d.foto) {
+                    thumb.innerHTML = '<img src="' + BASE_URL + '/' + d.foto + '" style="width:100%;height:100%;object-fit:cover" alt="">';
+                } else {
+                    thumb.innerHTML = '<i class="bi bi-' + (d.tipe === 'Studio' ? 'camera-reels' : 'camera-video') + '" style="font-size:1.4rem;color:#9ca3af"></i>';
+                }
+            }
+            // Lokasi
+            var lokEl = document.getElementById('resDetailLokasi');
+            if (lokEl) {
+                if (d.lokasi) { lokEl.classList.remove('d-none'); lokEl.querySelector('span').textContent = d.lokasi; }
+                else lokEl.classList.add('d-none');
+            }
+            // Kapasitas
+            var kapEl = document.getElementById('resDetailKapasitas');
+            if (kapEl) {
+                if (d.kapasitas) { kapEl.classList.remove('d-none'); kapEl.querySelector('span').textContent = d.kapasitas; }
+                else kapEl.classList.add('d-none');
+            }
+            // Deskripsi
+            var deskEl = document.getElementById('resDetailDeskripsi');
+            var deskText = document.getElementById('resDetailDeskripsiText');
+            if (deskEl && deskText) {
+                if (d.deskripsi) { deskEl.classList.remove('d-none'); deskText.textContent = d.deskripsi; }
+                else deskEl.classList.add('d-none');
+            }
+            // Spesifikasi
+            var spesEl = document.getElementById('resDetailSpesifikasi');
+            var spesText = document.getElementById('resDetailSpesText');
+            if (spesEl && spesText) {
+                if (d.spesifikasi) { spesEl.classList.remove('d-none'); spesText.textContent = d.spesifikasi; }
+                else spesEl.classList.add('d-none');
+            }
+            // Empty state
+            var emptyEl = document.getElementById('resDetailEmpty');
+            if (emptyEl) emptyEl.classList.toggle('d-none', !!(d.deskripsi || d.spesifikasi));
+            detail.classList.remove('d-none');
         });
     });
 

@@ -47,6 +47,33 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             </ul>
         </div>
 
+        <!-- Tools Navigation -->
+        <div class="sidebar-nav">
+            <div class="px-3 pt-2 pb-1" style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted)">Pengaturan</div>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link <?= $currentPage === 'aturan_reservasi.php' ? 'active' : '' ?>" href="<?= BASE_URL ?>/admin/aturan_reservasi.php">
+                        <i class="bi bi-sliders me-2"></i>Aturan Reservasi
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link <?= $currentPage === 'waitlist.php' ? 'active' : '' ?>" href="<?= BASE_URL ?>/admin/waitlist.php">
+                        <i class="bi bi-list-ol me-2"></i>Antrian
+                        <?php
+                        $wCount = $pdo->query("SELECT COUNT(*) FROM waitlist WHERE status = 'Waiting'")->fetchColumn();
+                        if ($wCount > 0): ?>
+                            <span class="badge bg-warning text-dark ms-auto" style="font-size:0.65rem"><?= $wCount ?></span>
+                        <?php endif; ?>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link <?= $currentPage === 'log_aktivitas.php' ? 'active' : '' ?>" href="<?= BASE_URL ?>/admin/log_aktivitas.php">
+                        <i class="bi bi-journal-text me-2"></i>Log Aktivitas
+                    </a>
+                </li>
+            </ul>
+        </div>
+
         <!-- Bottom Navigation -->
         <div class="sidebar-bottom">
             <ul class="nav flex-column">
@@ -94,6 +121,24 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             <li class="nav-item">
                 <a class="nav-link <?= $currentPage === 'kelola_user.php' ? 'active' : '' ?>" href="<?= BASE_URL ?>/admin/kelola_user.php">
                     <i class="bi bi-people me-2"></i>Kelola User
+                </a>
+            </li>
+        </ul>
+        <div class="px-3 pt-2 pb-1" style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted)">Pengaturan</div>
+        <ul class="nav flex-column px-2">
+            <li class="nav-item">
+                <a class="nav-link <?= $currentPage === 'aturan_reservasi.php' ? 'active' : '' ?>" href="<?= BASE_URL ?>/admin/aturan_reservasi.php">
+                    <i class="bi bi-sliders me-2"></i>Aturan Reservasi
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link <?= $currentPage === 'waitlist.php' ? 'active' : '' ?>" href="<?= BASE_URL ?>/admin/waitlist.php">
+                    <i class="bi bi-list-ol me-2"></i>Antrian
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link <?= $currentPage === 'log_aktivitas.php' ? 'active' : '' ?>" href="<?= BASE_URL ?>/admin/log_aktivitas.php">
+                    <i class="bi bi-journal-text me-2"></i>Log Aktivitas
                 </a>
             </li>
         </ul>

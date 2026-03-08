@@ -56,16 +56,19 @@ if ($userId === (int)$_SESSION['user_id']) {
 switch ($action) {
     case 'toggle_active':
         $result = toggleUserActive($pdo, $userId);
+        if ($result['success']) logActivity($pdo, 'update', 'user', $userId, "Admin mengubah status aktif user #$userId.");
         break;
 
     case 'change_role':
-        $role = $_POST['role'] ?? '';
+        $role   = $_POST['role'] ?? '';
         $result = updateUserRole($pdo, $userId, $role);
+        if ($result['success']) logActivity($pdo, 'update', 'user', $userId, "Admin mengubah role user #$userId menjadi $role.");
         break;
 
     case 'reset_password':
         $newPwd = $_POST['new_password'] ?? '';
         $result = resetUserPassword($pdo, $userId, $newPwd);
+        if ($result['success']) logActivity($pdo, 'update', 'user', $userId, "Admin mereset password user #$userId.");
         break;
 
     default:

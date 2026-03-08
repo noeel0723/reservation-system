@@ -75,12 +75,55 @@ function checkCollision(PDO $pdo, int $resourceId, string $waktuMulai, string $w
 function createReservation(PDO $pdo, array $data): array
 {
     // Validasi waktu
-    $mulai = new DateTime($data['waktu_mulai']);
+    $mulai   = new DateTime($data['waktu_mulai']);
     $selesai = new DateTime($data['waktu_selesai']);
 
     if ($selesai <= $mulai) {
         return ['success' => false, 'message' => 'Waktu selesai harus setelah waktu mulai.'];
     }
+
+    // ---- Validasi Aturan Reservasi (Feature 6) ----
+    $now = new DateTime();
+
+    $minAdvH = (int)getSetting($pdo, 'min_advance_hours', 1);
+    if ($minAdvH > 0 && $mulai < (clone $now)->modify("+{$minAdvH} hours")) {
+        return ['success' => false, 'message' => "Reservasi harus diajukan minimal {$minAdvH} jam sebelum waktu mulai."];
+    }
+
+    $maxAdvD = (int)getSetting($pdo, 'max_advance_days', 30);
+    if ($maxAdvD > 0 && $mulai > (clone $now)->modify("+{$maxAdvD} days")) {
+        return ['success' => false, 'message' => "Reservasi tidak bisa dibuat lebih dari {$maxAdvD} hari ke depan."];
+    }
+
+    $maxDurH = (int)getSetting($pdo, 'max_duration_hours', 8);
+    if ($maxDurH > 0) {
+        $durHours = ($selesai->getTimestamp() - $mulai->getTimestamp()) / 3600;
+        if ($durHours > $maxDurH) {
+            return ['success' => false, 'message' => "Durasi reservasi tidak boleh lebih dari {$maxDurH} jam."];
+        }
+    }
+
+    $startHour = getSetting($pdo, 'booking_start_hour', '06:00');
+    $endHour   = getSetting($pdo, 'booking_end_hour',   '22:00');
+    if ($mulai->format('H:i') < $startHour) {
+        return ['success' => false, 'message' => "Waktu mulai reservasi tidak boleh sebelum jam {$startHour}."];
+    }
+    if ($selesai->format('H:i') > $endHour) {
+        return ['success' => false, 'message' => "Waktu selesai reservasi tidak boleh melewati jam {$endHour}."];
+    }
+
+    $maxActive = (int)getSetting($pdo, 'max_active_per_user', 5);
+    if ($maxActive > 0) {
+        $cntStmt = $pdo->prepare(
+            "SELECT COUNT(*) FROM reservations WHERE user_id = :uid AND status IN ('Pending','Approved')"
+        );
+        $cntStmt->execute([':uid' => $data['user_id']]);
+        $activeCount = (int)$cntStmt->fetchColumn();
+        if ($activeCount >= $maxActive) {
+            return ['success' => false, 'message' => "Anda sudah memiliki {$activeCount} reservasi aktif. Batas maksimal adalah {$maxActive}."];
+        }
+    }
+    // ---- End Aturan Reservasi ----
 
     // Cek collision
     $collision = checkCollision($pdo, (int)$data['resource_id'], $data['waktu_mulai'], $data['waktu_selesai']);

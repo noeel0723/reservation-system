@@ -29,9 +29,25 @@ if ($reservationId <= 0 || !in_array($action, ['Approved', 'Rejected', 'Selesai'
     exit;
 }
 
+// Fetch reservation before updating (for waitlist check)
+$resRow = $pdo->prepare("SELECT resource_id, waktu_mulai, waktu_selesai FROM reservations WHERE id = :id");
+$resRow->execute([':id' => $reservationId]);
+$resData = $resRow->fetch();
+
 $result = updateReservationStatus($pdo, $reservationId, $action, $adminId, $catatan ?: null);
 
 if ($result['success']) {
+    // Log activity
+    logActivity($pdo, strtolower($action), 'reservation', $reservationId,
+        "Admin mengubah status reservasi #$reservationId menjadi $action."
+        . ($catatan ? " Catatan: $catatan" : ''));
+
+    // Waitlist: notify when a slot is freed
+    if (in_array($action, ['Rejected', 'Selesai']) && $resData) {
+        checkAndNotifyWaitlist($pdo, (int)$resData['resource_id'],
+            $resData['waktu_mulai'], $resData['waktu_selesai']);
+    }
+
     setFlash('success', $result['message']);
 } else {
     setFlash('error', $result['message']);
